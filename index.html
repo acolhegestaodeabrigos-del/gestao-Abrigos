@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -538,15 +539,15 @@
 
       <!-- KPI cards -->
       <div class="kpi-grid">
-        <div class="card">
+        <div class="card" id="card-vagas-ocupadas" style="cursor:pointer;" title="Clique para ajustar a quantidade de vagas ocupadas">
           <div class="kpi-top">
             <span class="kpi-label">Vagas ocupadas</span>
             <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/></svg>
             </div>
           </div>
-          <div class="kpi-value">34/40</div>
-          <div class="kpi-helper">85% de ocupação</div>
+          <div class="kpi-value" id="kpi-vagas-ocupadas">—</div>
+          <div class="kpi-helper" id="kpi-vagas-helper">Clique para ajustar</div>
         </div>
         <div class="card">
           <div class="kpi-top">
@@ -565,7 +566,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
             </div>
           </div>
-          <div class="kpi-value">12</div>
+          <div class="kpi-value" id="kpi-equipe-ativa">—</div>
           <div class="kpi-helper">Profissionais e voluntários</div>
         </div>
         <div class="card">
@@ -586,20 +587,20 @@
           <div class="card">
             <p class="card-title">Ocupação de vagas</p>
             <div class="occ-row">
-              <span style="font-weight:600">34 ocupadas de 40 vagas</span>
-              <strong>85%</strong>
+              <span style="font-weight:600" id="occ-resumo">— ocupadas de — vagas</span>
+              <strong id="occ-percentual">—%</strong>
             </div>
             <div class="progress-track">
-              <div class="progress-fill" style="width:85%"></div>
+              <div class="progress-fill" id="occ-progress-fill" style="width:0%"></div>
             </div>
             <div class="legend">
               <div class="legend-item">
                 <span class="legend-dot" style="background:#1B3A5C"></span>
-                Ocupadas (34)
+                <span id="occ-legend-ocupadas">Ocupadas (—)</span>
               </div>
               <div class="legend-item">
                 <span class="legend-dot" style="background:#E4F2F1;border:1px solid #E3E8EC"></span>
-                Disponíveis (6)
+                <span id="occ-legend-disponiveis">Disponíveis (—)</span>
               </div>
             </div>
           </div>
@@ -872,7 +873,7 @@
     <div class="timeline" id="drawer-timeline"></div>
   </div>
   <div class="drawer-footer">
-    <button class="btn-secondary">Editar cadastro</button>
+    <button class="btn-secondary" id="btn-editar-cadastro">Editar cadastro</button>
     <button class="btn-secondary" id="btn-desligar">Desligar acolhido</button>
   </div>
 </aside>
@@ -881,7 +882,7 @@
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3>Novo acolhimento</h3>
+      <h3 id="modal-acolhimento-titulo">Novo acolhimento</h3>
       <button class="drawer-close" id="modal-close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -988,7 +989,32 @@
   </div>
 </div>
 
-<!-- Modal: Atribuir/Trocar acolhido em uma vaga -->
+<!-- Modal: Ajustar quantidade de vagas ocupadas -->
+<div class="modal-overlay" id="modal-vagas-ocupadas-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Vagas ocupadas</h3>
+      <button class="drawer-close" id="modal-vagas-ocupadas-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="vo-capacidade">Capacidade total de camas da casa</label>
+        <input type="number" class="form-input" id="vo-capacidade" min="0" step="1" />
+      </div>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="vo-quantidade">Quantidade de vagas ocupadas</label>
+        <input type="number" class="form-input" id="vo-quantidade" min="0" step="1" />
+        <p class="content-subtitle" id="vo-ajuda" style="margin-top:8px;"></p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-vagas-ocupadas-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-vagas-ocupadas-save">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-atribuir-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -1124,6 +1150,15 @@
       entrada: formatarData(row.data_entrada),
       responsavel: nomeResponsavelPorId(row.responsavel_tecnico_id) || (row.responsavel_tecnico_id ? 'Responsável atribuído' : 'A definir'),
       obs: row.observacoes || '',
+      // Campos brutos, usados para preencher o formulário de edição
+      cpf: row.cpf || '',
+      dataNascimento: row.data_nascimento || '',
+      dataUltimoAcolhimento: row.data_ultimo_acolhimento || '',
+      encaminhadoPor: row.encaminhado_por || '',
+      possuiDeficiencia: !!row.possui_deficiencia,
+      qualDeficiencia: row.qual_deficiencia || '',
+      vagaId: row.vaga_id || '',
+      responsavelTecnicoId: row.responsavel_tecnico_id || '',
       intercorrencias: (row.intercorrencias || []).map(function(i) {
         return {
           id: i.id, data: i.data, texto: i.texto, gravidade: i.gravidade,
@@ -1303,6 +1338,43 @@
     }
   });
 
+  document.getElementById('btn-desligar').addEventListener('click', async function() {
+    if (!acolhidoAtual) return;
+    if (acolhidoAtual.status === 'desligado') {
+      alert('Este acolhido já está desligado.');
+      return;
+    }
+
+    var confirmado = confirm(
+      'Tem certeza que deseja desligar ' + acolhidoAtual.nome + '?\n\n' +
+      'Isso marca o status como "Desligado"' + (acolhidoAtual.vagaId ? ' e libera a vaga vinculada a ele.' : '.')
+    );
+    if (!confirmado) return;
+
+    var botao = document.getElementById('btn-desligar');
+    botao.disabled = true;
+
+    var vagaAnterior = acolhidoAtual.vagaId;
+    var resultado = await db.from('acolhidos').update({ status: 'desligado', vaga_id: null }).eq('id', acolhidoAtual.id);
+
+    if (resultado.error) {
+      console.error('Erro ao desligar acolhido:', resultado.error);
+      alert('Não foi possível desligar o acolhido. Tente novamente.');
+      botao.disabled = false;
+      return;
+    }
+
+    if (vagaAnterior) {
+      var resultadoVaga = await db.from('vagas').update({ status: 'disponivel' }).eq('id', vagaAnterior);
+      if (resultadoVaga.error) console.error('Erro ao liberar vaga do acolhido desligado:', resultadoVaga.error);
+    }
+
+    botao.disabled = false;
+    fecharProntuario();
+    await carregarAcolhidos();
+    await carregarVagas();
+  });
+
   // ===== Alertas dinâmicos do Dashboard =====
   function renderAlertasDashboard() {
     var container = document.getElementById('dashboard-alertas');
@@ -1453,6 +1525,11 @@
 
     EQUIPE = resultado.data;
     renderEquipe();
+
+    var kpiEquipe = document.getElementById('kpi-equipe-ativa');
+    if (kpiEquipe) {
+      kpiEquipe.textContent = EQUIPE.filter(function(m) { return m.ativo; }).length;
+    }
   }
 
   function renderEquipe() {
@@ -1595,7 +1672,147 @@
         if (vaga) abrirModalAtribuir(vaga);
       });
     });
+
+    atualizarKpiVagasOcupadas();
   }
+
+  // ===== KPI do Dashboard: Vagas ocupadas (ocupadas reais x capacidade total da casa) =====
+  var CAPACIDADE_TOTAL = 0;
+
+  async function carregarOcupacao() {
+    var resultado = await db.from('ocupacao').select('capacidade_total').eq('id', 1).single();
+    if (resultado.error) {
+      console.error('Erro ao carregar capacidade total do Supabase:', resultado.error);
+      return;
+    }
+    CAPACIDADE_TOTAL = resultado.data.capacidade_total || 0;
+    atualizarKpiVagasOcupadas();
+  }
+
+  function atualizarKpiVagasOcupadas() {
+    var valorEl = document.getElementById('kpi-vagas-ocupadas');
+    var helperEl = document.getElementById('kpi-vagas-helper');
+
+    var ocupadas = VAGAS.filter(function(v) { return v.status === 'ocupada'; }).length;
+    var disponiveis = Math.max(CAPACIDADE_TOTAL - ocupadas, 0);
+    var percentual = CAPACIDADE_TOTAL > 0 ? Math.round((ocupadas / CAPACIDADE_TOTAL) * 100) : 0;
+
+    if (valorEl && helperEl) {
+      valorEl.textContent = ocupadas + '/' + CAPACIDADE_TOTAL;
+      helperEl.textContent = CAPACIDADE_TOTAL > 0 ? percentual + '% de ocupação' : 'Defina a capacidade total';
+    }
+
+    // Card "Ocupação de vagas" (mesmo cálculo, com o percentual disponível também)
+    var resumoEl = document.getElementById('occ-resumo');
+    var percentualEl = document.getElementById('occ-percentual');
+    var barraEl = document.getElementById('occ-progress-fill');
+    var legendaOcupadasEl = document.getElementById('occ-legend-ocupadas');
+    var legendaDisponiveisEl = document.getElementById('occ-legend-disponiveis');
+
+    if (resumoEl) resumoEl.textContent = ocupadas + ' ocupadas de ' + CAPACIDADE_TOTAL + ' vagas';
+    if (percentualEl) percentualEl.textContent = percentual + '%';
+    if (barraEl) barraEl.style.width = percentual + '%';
+    if (legendaOcupadasEl) legendaOcupadasEl.textContent = 'Ocupadas (' + ocupadas + ')';
+    if (legendaDisponiveisEl) {
+      var percentualDisponivel = CAPACIDADE_TOTAL > 0 ? Math.round((disponiveis / CAPACIDADE_TOTAL) * 100) : 0;
+      legendaDisponiveisEl.textContent = 'Disponíveis (' + disponiveis + ' — ' + percentualDisponivel + '%)';
+    }
+  }
+
+  function abrirModalVagasOcupadas() {
+    var totalVagasCadastradas = VAGAS.length;
+    var ocupadas = VAGAS.filter(function(v) { return v.status === 'ocupada'; }).length;
+
+    document.getElementById('vo-capacidade').value = CAPACIDADE_TOTAL;
+
+    var input = document.getElementById('vo-quantidade');
+    input.value = ocupadas;
+    input.max = totalVagasCadastradas;
+    document.getElementById('vo-ajuda').textContent =
+      'Hoje: ' + ocupadas + ' de ' + totalVagasCadastradas + ' vagas cadastradas na tela de Vagas (a quantidade ocupada não pode passar disso). Ao aumentar, vagas disponíveis são marcadas como ocupadas (sem vincular acolhido); ao diminuir, vagas ocupadas sem acolhido vinculado são liberadas primeiro. Para atribuir uma pessoa a uma vaga específica, use a tela de Vagas.';
+    document.getElementById('modal-vagas-ocupadas-overlay').classList.add('open');
+  }
+  function fecharModalVagasOcupadas() {
+    document.getElementById('modal-vagas-ocupadas-overlay').classList.remove('open');
+  }
+  document.getElementById('card-vagas-ocupadas').addEventListener('click', abrirModalVagasOcupadas);
+  document.getElementById('modal-vagas-ocupadas-close').addEventListener('click', fecharModalVagasOcupadas);
+  document.getElementById('modal-vagas-ocupadas-cancel').addEventListener('click', fecharModalVagasOcupadas);
+  document.getElementById('modal-vagas-ocupadas-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-vagas-ocupadas-overlay')) fecharModalVagasOcupadas();
+  });
+
+  document.getElementById('modal-vagas-ocupadas-save').addEventListener('click', async function() {
+    var totalVagasCadastradas = VAGAS.length;
+    var ocupadasAtual = VAGAS.filter(function(v) { return v.status === 'ocupada'; }).length;
+    var alvo = parseInt(document.getElementById('vo-quantidade').value, 10);
+    var novaCapacidade = parseInt(document.getElementById('vo-capacidade').value, 10);
+
+    if (isNaN(novaCapacidade) || novaCapacidade < 0) {
+      alert('Digite uma capacidade total válida (0 ou mais).');
+      return;
+    }
+    if (isNaN(alvo) || alvo < 0 || alvo > totalVagasCadastradas) {
+      alert('Digite uma quantidade de ocupadas entre 0 e ' + totalVagasCadastradas + ' (total de vagas cadastradas na tela de Vagas).');
+      return;
+    }
+
+    var botao = document.getElementById('modal-vagas-ocupadas-save');
+    botao.disabled = true;
+
+    // Salva a capacidade total na tabela ocupacao
+    var rCap = await db.from('ocupacao').update({ capacidade_total: novaCapacidade }).eq('id', 1);
+    if (rCap.error) {
+      console.error('Erro ao salvar capacidade total:', rCap.error);
+      alert('Não foi possível salvar a capacidade total. Tente novamente.');
+      botao.disabled = false;
+      return;
+    }
+    CAPACIDADE_TOTAL = novaCapacidade;
+
+    var diferenca = alvo - ocupadasAtual;
+
+    if (diferenca > 0) {
+      // Precisa ocupar mais vagas: pega as disponíveis (sem mexer em quem já tem acolhido)
+      var idsParaOcupar = VAGAS
+        .filter(function(v) { return v.status === 'disponivel'; })
+        .slice(0, diferenca)
+        .map(function(v) { return v.id; });
+
+      if (idsParaOcupar.length > 0) {
+        var r1 = await db.from('vagas').update({ status: 'ocupada' }).in('id', idsParaOcupar);
+        if (r1.error) {
+          console.error('Erro ao ocupar vagas:', r1.error);
+          alert('Não foi possível atualizar as vagas. Tente novamente.');
+          botao.disabled = false;
+          return;
+        }
+      }
+    } else if (diferenca < 0) {
+      // Precisa liberar vagas: prioriza as que não têm ninguém vinculado
+      var vagasOcupadasSemOcupante = VAGAS.filter(function(v) { return v.status === 'ocupada' && !ocupanteDaVaga(v); });
+      var faltam = Math.abs(diferenca);
+      var idsParaLiberar = vagasOcupadasSemOcupante.slice(0, faltam).map(function(v) { return v.id; });
+
+      if (faltam > idsParaLiberar.length) {
+        alert('Só consegui liberar ' + idsParaLiberar.length + ' de ' + faltam + ' vaga(s) automaticamente, porque as demais têm um acolhido vinculado. Use a tela de Vagas (botão "Trocar") para remover essas pessoas antes.');
+      }
+
+      if (idsParaLiberar.length > 0) {
+        var r2 = await db.from('vagas').update({ status: 'disponivel' }).in('id', idsParaLiberar);
+        if (r2.error) {
+          console.error('Erro ao liberar vagas:', r2.error);
+          alert('Não foi possível atualizar as vagas. Tente novamente.');
+          botao.disabled = false;
+          return;
+        }
+      }
+    }
+
+    botao.disabled = false;
+    fecharModalVagasOcupadas();
+    await carregarVagas();
+  });
 
   function abrirModalVaga() {
     document.getElementById('nv-identificacao').value = '';
@@ -1745,7 +1962,7 @@
   var modalOverlay = document.getElementById('modal-overlay');
 
   // Busca vagas disponíveis e membros ativos da equipe para preencher os selects do formulário
-  async function carregarOpcoesVagaEResponsavel() {
+  async function carregarOpcoesVagaEResponsavel(vagaAtualId) {
     var selectVaga = document.getElementById('na-vaga');
     var selectResponsavel = document.getElementById('na-responsavel');
 
@@ -1759,13 +1976,19 @@
     if (resultadoVagas.error) {
       console.error('Erro ao carregar vagas do Supabase:', resultadoVagas.error);
     } else {
-      resultadoVagas.data.forEach(function(v) {
+      var listaVagas = resultadoVagas.data;
+      // Em modo de edição, garante que a vaga atual do acolhido apareça mesmo que não esteja "disponível"
+      if (vagaAtualId && !listaVagas.some(function(v) { return v.id === vagaAtualId; })) {
+        var vagaAtualResultado = await db.from('vagas').select('id, identificacao, unidade').eq('id', vagaAtualId).single();
+        if (!vagaAtualResultado.error) listaVagas = [vagaAtualResultado.data].concat(listaVagas);
+      }
+      listaVagas.forEach(function(v) {
         var opt = document.createElement('option');
         opt.value = v.id;
         opt.textContent = v.identificacao + ' — ' + v.unidade;
         selectVaga.appendChild(opt);
       });
-      if (resultadoVagas.data.length === 0) {
+      if (listaVagas.length === 0) {
         var optSemVaga = document.createElement('option');
         optSemVaga.value = '';
         optSemVaga.textContent = 'Nenhuma vaga disponível no momento';
@@ -1800,23 +2023,42 @@
     }
   }
 
-  function abrirModalNovoAcolhimento() {
-    document.getElementById('na-nome').value = '';
-    document.getElementById('na-cpf').value = '';
-    document.getElementById('na-nascimento').value = '';
-    document.getElementById('na-ultimo').value = '';
-    document.getElementById('na-qual-deficiencia').value = '';
-    document.getElementById('na-origem').value = '';
-    document.querySelector('input[name="na-deficiencia"][value="nao"]').checked = true;
+  var idAcolhidoEmEdicao = null; // null = cadastrando novo; caso contrário, guarda o id do acolhido em edição
+
+  function abrirModalNovoAcolhimento(acolhidoParaEditar) {
+    idAcolhidoEmEdicao = acolhidoParaEditar ? acolhidoParaEditar.id : null;
+
+    document.getElementById('modal-acolhimento-titulo').textContent = acolhidoParaEditar ? 'Editar cadastro' : 'Novo acolhimento';
+    document.getElementById('modal-save').textContent = acolhidoParaEditar ? 'Salvar alterações' : 'Registrar acolhimento';
+
+    document.getElementById('na-nome').value = acolhidoParaEditar ? acolhidoParaEditar.nome : '';
+    document.getElementById('na-cpf').value = acolhidoParaEditar ? acolhidoParaEditar.cpf : '';
+    document.getElementById('na-nascimento').value = acolhidoParaEditar ? acolhidoParaEditar.dataNascimento : '';
+    document.getElementById('na-ultimo').value = acolhidoParaEditar ? acolhidoParaEditar.dataUltimoAcolhimento : '';
+    document.getElementById('na-qual-deficiencia').value = acolhidoParaEditar ? acolhidoParaEditar.qualDeficiencia : '';
+    document.getElementById('na-origem').value = acolhidoParaEditar ? acolhidoParaEditar.encaminhadoPor : '';
+
+    var temDeficiencia = acolhidoParaEditar ? acolhidoParaEditar.possuiDeficiencia : false;
+    document.querySelector('input[name="na-deficiencia"][value="' + (temDeficiencia ? 'sim' : 'nao') + '"]').checked = true;
     atualizarRadioVisual();
-    document.getElementById('na-deficiencia-painel').classList.remove('open');
+    document.getElementById('na-deficiencia-painel').classList.toggle('open', temDeficiencia);
+
     modalOverlay.classList.add('open');
-    carregarOpcoesVagaEResponsavel();
+    carregarOpcoesVagaEResponsavel(acolhidoParaEditar ? acolhidoParaEditar.vagaId : null).then(function() {
+      if (acolhidoParaEditar) {
+        document.getElementById('na-vaga').value = acolhidoParaEditar.vagaId || '';
+        document.getElementById('na-responsavel').value = acolhidoParaEditar.responsavelTecnicoId || '';
+      }
+    });
   }
   function fecharModalNovoAcolhimento() {
     modalOverlay.classList.remove('open');
+    idAcolhidoEmEdicao = null;
   }
-  document.getElementById('btn-novo-acolhimento').addEventListener('click', abrirModalNovoAcolhimento);
+  document.getElementById('btn-novo-acolhimento').addEventListener('click', function() { abrirModalNovoAcolhimento(); });
+  document.getElementById('btn-editar-cadastro').addEventListener('click', function() {
+    if (acolhidoAtual) abrirModalNovoAcolhimento(acolhidoAtual);
+  });
   document.getElementById('modal-close').addEventListener('click', fecharModalNovoAcolhimento);
   document.getElementById('modal-cancel').addEventListener('click', fecharModalNovoAcolhimento);
   modalOverlay.addEventListener('click', function(e) {
@@ -1867,22 +2109,66 @@
       return;
     }
 
-    var obsPartes = ['Novo acolhimento — cadastro inicial.'];
     var ultimo = document.getElementById('na-ultimo').value;
-    if (ultimo) obsPartes.push('Último acolhimento registrado em ' + dataBr(ultimo) + '.');
     var origem = document.getElementById('na-origem').value.trim();
+    var vagaId = document.getElementById('na-vaga').value || null;
+    var responsavelId = document.getElementById('na-responsavel').value || null;
+
+    var botaoSalvar = document.getElementById('modal-save');
+    botaoSalvar.disabled = true;
+
+    if (idAcolhidoEmEdicao) {
+      // ===== Modo edição: atualiza o cadastro existente =====
+      var vagaAnterior = acolhidoAtual ? acolhidoAtual.vagaId : null;
+
+      var resultadoEdicao = await db.from('acolhidos').update({
+        nome_completo: nome,
+        cpf: cpf,
+        data_nascimento: nascimento,
+        data_ultimo_acolhimento: ultimo || null,
+        encaminhado_por: origem || null,
+        possui_deficiencia: temDeficiencia,
+        qual_deficiencia: temDeficiencia ? (qual || null) : null,
+        vaga_id: vagaId,
+        responsavel_tecnico_id: responsavelId,
+      }).eq('id', idAcolhidoEmEdicao);
+
+      botaoSalvar.disabled = false;
+
+      if (resultadoEdicao.error) {
+        console.error('Erro ao salvar edição do acolhimento:', resultadoEdicao.error);
+        alert('Não foi possível salvar as alterações. Tente novamente.');
+        return;
+      }
+
+      // Se a vaga mudou, libera a anterior e ocupa a nova
+      if (vagaAnterior !== vagaId) {
+        if (vagaAnterior) {
+          var rLiberar = await db.from('vagas').update({ status: 'disponivel' }).eq('id', vagaAnterior);
+          if (rLiberar.error) console.error('Erro ao liberar vaga anterior:', rLiberar.error);
+        }
+        if (vagaId) {
+          var rOcupar = await db.from('vagas').update({ status: 'ocupada' }).eq('id', vagaId);
+          if (rOcupar.error) console.error('Erro ao ocupar nova vaga:', rOcupar.error);
+        }
+      }
+
+      fecharModalNovoAcolhimento();
+      fecharProntuario();
+      await carregarAcolhidos();
+      await carregarVagas();
+      return;
+    }
+
+    // ===== Modo criação: novo acolhimento =====
+    var obsPartes = ['Novo acolhimento — cadastro inicial.'];
+    if (ultimo) obsPartes.push('Último acolhimento registrado em ' + dataBr(ultimo) + '.');
     if (origem) obsPartes.push('Encaminhado: ' + origem + '.');
     if (temDeficiencia) {
       obsPartes.push('Possui deficiência' + (qual ? ' (' + qual + ')' : '') + '.');
     } else {
       obsPartes.push('Sem deficiência declarada.');
     }
-
-    var botaoSalvar = document.getElementById('modal-save');
-    botaoSalvar.disabled = true;
-
-    var vagaId = document.getElementById('na-vaga').value || null;
-    var responsavelId = document.getElementById('na-responsavel').value || null;
 
     var resultado = await db.from('acolhidos').insert({
       nome_completo: nome,
@@ -1918,10 +2204,12 @@
     fecharModalNovoAcolhimento();
     document.querySelector('.filter-chip[data-status="todos"]').click();
     await carregarAcolhidos();
+    await carregarVagas();
   });
 
   async function iniciarApp() {
     await carregarEquipe();
+    await carregarOcupacao();
     await carregarVagas();
     await carregarAcolhidos();
   }
