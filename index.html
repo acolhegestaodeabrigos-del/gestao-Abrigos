@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -608,33 +609,8 @@
           <!-- Recent activity -->
           <div class="card">
             <p class="card-title">Atividade recente</p>
-            <div class="activity-item">
-              <div class="activity-avatar" style="background:rgba(46,139,135,0.12);color:#2E8B87">A</div>
-              <div>
-                <p class="activity-desc">Novo acolhimento registrado — Quarto 4, Leito A</p>
-                <p class="activity-meta">Acolhimento · há 2h</p>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-avatar" style="background:rgba(232,163,61,0.15);color:#E8A33D">D</div>
-              <div>
-                <p class="activity-desc">Doação de alimentos recebida — Mercado Central</p>
-                <p class="activity-meta">Doação · há 5h</p>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-avatar" style="background:rgba(27,58,92,0.1);color:#1B3A5C">V</div>
-              <div>
-                <p class="activity-desc">Leito liberado — Quarto 2, Leito C</p>
-                <p class="activity-meta">Vaga · ontem</p>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-avatar" style="background:rgba(46,139,135,0.12);color:#2E8B87">E</div>
-              <div>
-                <p class="activity-desc">Novo voluntário cadastrado — plantão noturno</p>
-                <p class="activity-meta">Equipe · há 2 dias</p>
-              </div>
+            <div id="dashboard-atividades">
+              <p class="content-subtitle" style="padding:4px 0;">Carregando atividades...</p>
             </div>
           </div>
         </div>
@@ -1415,6 +1391,8 @@
       if (resultadoVaga.error) console.error('Erro ao liberar vaga do acolhido desligado:', resultadoVaga.error);
     }
 
+    registrarAtividade('desligamento', 'Desligamento — ' + acolhidoAtual.nome + (motivo ? '. Motivo: ' + motivo : ''));
+
     botao.disabled = false;
     fecharModalDesligar();
     fecharProntuario();
@@ -1457,6 +1435,78 @@
     }
 
     container.innerHTML = html;
+  }
+
+  // ===== Atividade recente do Dashboard =====
+  // Cada linha aqui vem da tabela "atividades" no Supabase (ver instruções de criação da tabela).
+  var ATIVIDADE_CONFIG = {
+    acolhimento:     { letra: 'A', bg: 'rgba(46,139,135,0.12)', cor: '#2E8B87', label: 'Acolhimento' },
+    leito_liberado:  { letra: 'L', bg: 'rgba(27,58,92,0.1)',    cor: '#1B3A5C', label: 'Vaga' },
+    troca_quarto:    { letra: 'T', bg: 'rgba(232,163,61,0.15)', cor: '#E8A33D', label: 'Troca de quarto' },
+    desligamento:    { letra: 'D', bg: 'rgba(199,85,74,0.12)',  cor: '#C7554A', label: 'Desligamento' },
+  };
+
+  // Converte um timestamp ISO em texto relativo ("há 2h", "ontem", "há 3 dias"...)
+  function tempoRelativo(isoString) {
+    var agora = new Date();
+    var data = new Date(isoString);
+    var diffMs = agora - data;
+    var diffMin = Math.floor(diffMs / 60000);
+    var diffH = Math.floor(diffMin / 60);
+    var diffDias = Math.floor(diffH / 24);
+
+    if (diffMin < 1) return 'agora mesmo';
+    if (diffMin < 60) return 'há ' + diffMin + (diffMin === 1 ? ' min' : ' min');
+    if (diffH < 24) return 'há ' + diffH + (diffH === 1 ? ' hora' : ' horas');
+    if (diffDias === 1) return 'ontem';
+    if (diffDias < 7) return 'há ' + diffDias + ' dias';
+    return formatarData(data.toISOString().slice(0, 10));
+  }
+
+  // Grava uma atividade no histórico. Nunca interrompe a ação principal caso falhe.
+  async function registrarAtividade(tipo, descricao) {
+    try {
+      var resultado = await db.from('atividades').insert({ tipo: tipo, descricao: descricao });
+      if (resultado.error) {
+        console.error('Erro ao registrar atividade:', resultado.error);
+      }
+    } catch (e) {
+      console.error('Erro ao registrar atividade:', e);
+    }
+    carregarAtividadesRecentes();
+  }
+
+  async function carregarAtividadesRecentes() {
+    var container = document.getElementById('dashboard-atividades');
+    if (!container) return;
+
+    var resultado = await db
+      .from('atividades')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(8);
+
+    if (resultado.error) {
+      console.error('Erro ao carregar atividades do Supabase:', resultado.error);
+      container.innerHTML = '<p class="content-subtitle" style="padding:4px 0;">Não foi possível carregar as atividades. Verifique se a tabela "atividades" existe no Supabase.</p>';
+      return;
+    }
+
+    if (!resultado.data.length) {
+      container.innerHTML = '<p class="content-subtitle" style="padding:4px 0;">Nenhuma atividade registrada ainda.</p>';
+      return;
+    }
+
+    container.innerHTML = resultado.data.map(function(item) {
+      var cfg = ATIVIDADE_CONFIG[item.tipo] || { letra: '•', bg: 'rgba(91,107,120,0.12)', cor: '#5B6B78', label: 'Atividade' };
+      return '<div class="activity-item">' +
+        '<div class="activity-avatar" style="background:' + cfg.bg + ';color:' + cfg.cor + '">' + cfg.letra + '</div>' +
+        '<div>' +
+        '<p class="activity-desc">' + item.descricao + '</p>' +
+        '<p class="activity-meta">' + cfg.label + ' · ' + tempoRelativo(item.created_at) + '</p>' +
+        '</div>' +
+        '</div>';
+    }).join('');
   }
 
   // ===== Formulário de nova intercorrência =====
@@ -1913,7 +1963,7 @@
 
   async function abrirModalAtribuir(vaga) {
     var ocupante = ocupanteDaVaga(vaga);
-    vagaEmEdicao = { id: vaga.id, ocupanteId: ocupante ? ocupante.id : null };
+    vagaEmEdicao = { id: vaga.id, ocupanteId: ocupante ? ocupante.id : null, identificacao: vaga.identificacao };
 
     document.getElementById('atribuir-titulo').textContent = 'Atribuir vaga — ' + vaga.identificacao;
     var select = document.getElementById('at-acolhido');
@@ -1975,8 +2025,9 @@
 
     if (novoOcupanteId) {
       // Se o novo ocupante já estava em outra vaga, libera a vaga antiga dele
-      var acolhidoInfo = await db.from('acolhidos').select('vaga_id').eq('id', novoOcupanteId).single();
-      if (!acolhidoInfo.error && acolhidoInfo.data.vaga_id && acolhidoInfo.data.vaga_id !== vagaId) {
+      var acolhidoInfo = await db.from('acolhidos').select('nome_completo, vaga_id, vagas(identificacao)').eq('id', novoOcupanteId).single();
+      var vinhaDeOutraVaga = !acolhidoInfo.error && acolhidoInfo.data.vaga_id && acolhidoInfo.data.vaga_id !== vagaId;
+      if (vinhaDeOutraVaga) {
         var r2 = await db.from('vagas').update({ status: 'disponivel' }).eq('id', acolhidoInfo.data.vaga_id);
         if (r2.error) console.error('Erro ao liberar vaga anterior do acolhido:', r2.error);
       }
@@ -1989,6 +2040,12 @@
         botao.disabled = false;
         return;
       }
+
+      // Só é "troca de quartos" quando a pessoa já estava em outro leito antes
+      if (vinhaDeOutraVaga) {
+        var vagaAntigaTexto = acolhidoInfo.data.vagas ? acolhidoInfo.data.vagas.identificacao : 'outro leito';
+        registrarAtividade('troca_quarto', 'Troca de quartos — ' + acolhidoInfo.data.nome_completo + ': de ' + vagaAntigaTexto + ' para ' + vagaEmEdicao.identificacao);
+      }
     } else {
       var r5 = await db.from('vagas').update({ status: 'disponivel' }).eq('id', vagaId);
       if (r5.error) {
@@ -1997,6 +2054,7 @@
         botao.disabled = false;
         return;
       }
+      registrarAtividade('leito_liberado', 'Leito liberado — ' + vagaEmEdicao.identificacao);
     }
 
     botao.disabled = false;
@@ -2198,6 +2256,13 @@
           var rOcupar = await db.from('vagas').update({ status: 'ocupada' }).eq('id', vagaId);
           if (rOcupar.error) console.error('Erro ao ocupar nova vaga:', rOcupar.error);
         }
+
+        var novaVagaTexto = document.getElementById('na-vaga').selectedOptions[0].textContent;
+        if (vagaAnterior && vagaId) {
+          registrarAtividade('troca_quarto', 'Troca de quartos — ' + nome + ': de ' + acolhidoAtual.vaga + ' para ' + novaVagaTexto);
+        } else if (vagaAnterior && !vagaId) {
+          registrarAtividade('leito_liberado', 'Leito liberado — ' + acolhidoAtual.vaga);
+        }
       }
 
       fecharModalNovoAcolhimento();
@@ -2248,6 +2313,9 @@
       }
     }
 
+    var vagaEscolhidaTexto = document.getElementById('na-vaga').selectedOptions[0].textContent;
+    registrarAtividade('acolhimento', 'Novo acolhimento — ' + nome + (vagaId ? ' — ' + vagaEscolhidaTexto : ''));
+
     fecharModalNovoAcolhimento();
     document.querySelector('.filter-chip[data-status="todos"]').click();
     await carregarAcolhidos();
@@ -2259,6 +2327,7 @@
     await carregarOcupacao();
     await carregarVagas();
     await carregarAcolhidos();
+    await carregarAtividadesRecentes();
   }
   iniciarApp();
 </script>
