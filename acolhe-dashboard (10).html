@@ -1,0 +1,1932 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Acolhe — Gestão de Abrigos</title>
+<style>
+  :root {
+    --navy: #1B3A5C;
+    --navy-dark: #12283F;
+    --teal: #2E8B87;
+    --teal-light: #E4F2F1;
+    --amber: #E8A33D;
+    --amber-light: #FBF1E1;
+    --bg: #F7F9FA;
+    --surface: #FFFFFF;
+    --text: #1A1A1A;
+    --text-muted: #5B6B78;
+    --border: #E3E8EC;
+    --danger: #C7554A;
+    --danger-light: #FBEAE8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .app { display: flex; min-height: 100vh; width: 100%; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--navy);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.25s ease;
+    overflow: hidden;
+  }
+  .sidebar.collapsed { width: 76px; }
+  .sidebar.collapsed .brand-name,
+  .sidebar.collapsed .brand-sub,
+  .sidebar.collapsed .nav-item span,
+  .sidebar.collapsed .user-name,
+  .sidebar.collapsed .user-role { display: none; }
+  .sidebar-header { display: flex; align-items: center; gap: 12px; padding: 22px 20px; }
+  .logo-box {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; flex-shrink: 0;
+  }
+  .brand-name { font-weight: 800; font-size: 15px; margin: 0; white-space: nowrap; }
+  .brand-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin: 0; white-space: nowrap; }
+  .divider { border-top: 1px solid rgba(255,255,255,0.1); }
+
+  .nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px;
+    color: rgba(255,255,255,0.65); font-weight: 500; font-size: 14px;
+    background: transparent; border: none; cursor: pointer; text-align: left; width: 100%;
+    font-family: inherit;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); }
+  .nav-item.active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 600; }
+  .nav-item svg { flex-shrink: 0; stroke: rgba(255,255,255,0.55); }
+  .nav-item.active svg { stroke: var(--amber); }
+
+  .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .user-row { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--navy); flex-shrink: 0;
+  }
+  .user-name { font-size: 12.5px; font-weight: 600; margin: 0; white-space: nowrap; }
+  .user-role { font-size: 11px; color: rgba(255,255,255,0.5); margin: 0; white-space: nowrap; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .icon-btn {
+    background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .icon-btn:hover { background: var(--bg); }
+  .page-title { font-weight: 700; font-size: 15px; flex: 1; margin: 0; }
+  .notif-dot {
+    position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--danger);
+  }
+
+  .content { padding: 24px; }
+  .content-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+  }
+  .content-title { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .content-subtitle { font-size: 13px; color: var(--text-muted); margin: 0; }
+  .badge-demo {
+    font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 999px;
+    background: var(--amber-light); color: #8A5A12; white-space: nowrap;
+  }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  }
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .kpi-label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+  .kpi-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 4px 0; }
+  .kpi-helper { font-size: 12px; color: var(--text-muted); }
+
+  /* Two-column layout */
+  .grid-2col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 20px; }
+  .card-title { font-weight: 700; font-size: 15px; margin: 0 0 16px; }
+
+  /* Occupancy */
+  .occ-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+  .occ-row strong { font-weight: 700; color: var(--navy); }
+  .progress-track { height: 10px; border-radius: 6px; background: var(--teal-light); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 6px; background: var(--navy); }
+  .legend { display: flex; gap: 24px; margin-top: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* Activity */
+  .activity-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .activity-item:first-child { padding-top: 0; }
+  .activity-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .activity-desc { font-size: 13.5px; font-weight: 600; margin: 0 0 2px; }
+  .activity-meta { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+  /* Alerts */
+  .alert-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .alert-box {
+    padding: 12px; border-radius: 8px; border: 1px solid; font-size: 13px; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .alert-box:last-child { margin-bottom: 0; }
+  .alert-high { background: var(--danger-light); border-color: #F0CFC9; }
+  .alert-medium { background: var(--amber-light); border-color: #F0DFB8; }
+  .alert-normal { background: var(--teal-light); border-color: #CFE6E4; }
+  .alert-box-date { font-weight: 500; color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+  #dashboard-alertas { max-height: 360px; overflow-y: auto; padding-right: 2px; }
+
+  /* Quick actions */
+  .quick-action {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    cursor: pointer; margin-bottom: 8px; font-size: 13.5px; font-weight: 600;
+  }
+  .quick-action:last-child { margin-bottom: 0; }
+  .quick-action:hover { background: var(--bg); }
+
+  @media (max-width: 980px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-2col { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Responsivo: sidebar vira gaveta no mobile/tablet ===== */
+  @media (max-width: 860px) {
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
+      transform: translateX(-100%); z-index: 50; transition: transform 0.25s ease;
+    }
+    .sidebar.mobile-open { transform: translateX(0); }
+    /* No mobile o botão de menu abre/fecha a gaveta, não usa o modo "collapsed" */
+    .sidebar.collapsed { width: 260px; }
+    .sidebar.collapsed .brand-name, .sidebar.collapsed .brand-sub,
+    .sidebar.collapsed .nav-item span, .sidebar.collapsed .user-name,
+    .sidebar.collapsed .user-role { display: block; }
+    .sidebar-overlay {
+      position: fixed; inset: 0; background: rgba(18,40,63,0.35);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 40;
+    }
+    .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+    .content { padding: 16px; }
+    .topbar { padding: 12px 16px; }
+  }
+
+  @media (max-width: 560px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .content { padding: 12px; }
+    .content-title { font-size: 18px; }
+    .kpi-value { font-size: 22px; }
+    .card { padding: 14px; }
+    .grid-2col { gap: 14px; }
+    /* Tabela de acolhidos rola na horizontal em vez de espremer as colunas */
+    .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.data-table { min-width: 640px; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { min-width: 0; }
+    .drawer { width: 100%; max-width: 100vw; }
+    .modal { width: 100%; margin: 0; max-height: 100vh; border-radius: 0; }
+    .modal-overlay { padding: 0; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 380px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Pages */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--navy); color: #fff; border: none;
+    padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13.5px;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--navy-dark); }
+
+  /* Toolbar: search + filters */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
+  }
+  .search-box {
+    flex: 1; min-width: 220px; display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px;
+  }
+  .search-box input {
+    border: none; outline: none; font-size: 13.5px; font-family: inherit;
+    flex: 1; background: transparent; color: var(--text);
+  }
+  .search-box svg { flex-shrink: 0; }
+  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .filter-chip:hover { background: var(--bg); }
+  .filter-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* Table */
+  .table-card { padding: 0; overflow: hidden; }
+  table.data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; color: var(--text-muted); padding: 14px 20px;
+    border-bottom: 1px solid var(--border); background: var(--bg);
+  }
+  .data-table td {
+    padding: 14px 20px; font-size: 13.5px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  }
+  .data-table tbody tr { cursor: pointer; }
+  .data-table tbody tr:hover { background: var(--bg); }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .name-cell { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .name-avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--teal-light); color: var(--teal);
+    display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; flex-shrink: 0;
+  }
+  .status-badge {
+    display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  }
+  .status-ativo { background: var(--teal-light); color: #1F6B67; }
+  .status-avaliacao { background: var(--amber-light); color: #8A5A12; }
+  .status-desligado { background: #EEF0F2; color: var(--text-muted); }
+  .row-arrow { color: var(--text-muted); }
+
+  /* Drawer (prontuário deslizante) */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(18,40,63,0.35);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 30;
+  }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100vh; width: 420px; max-width: 92vw;
+    background: var(--surface); box-shadow: -8px 0 24px rgba(18,40,63,0.12);
+    transform: translateX(100%); transition: transform 0.28s ease; z-index: 31;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+  }
+  .drawer-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  .drawer-close {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    padding: 4px; display: flex; align-items: center; justify-content: center;
+  }
+  .drawer-body { padding: 24px; overflow-y: auto; flex: 1; }
+  .drawer-profile { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+  .drawer-avatar {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--teal-light); color: var(--teal);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0;
+  }
+  .drawer-name { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+  .drawer-field { margin-bottom: 16px; }
+  .drawer-field-label {
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--text-muted); margin: 0 0 4px;
+  }
+  .drawer-field-value { font-size: 14px; font-weight: 500; margin: 0; }
+  .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
+  .drawer-footer {
+    padding: 18px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px;
+  }
+  .btn-secondary {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13.5px; cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+
+  /* Intercorrências */
+  .drawer-section-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 28px 0 14px;
+  }
+  .drawer-section-title h4 { margin: 0; font-size: 13.5px; font-weight: 700; }
+  .btn-link {
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    color: var(--teal); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 4px; padding: 0;
+  }
+  .btn-link:hover { text-decoration: underline; }
+
+  .timeline { position: relative; padding-left: 18px; }
+  .timeline-item { position: relative; padding-bottom: 18px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -18px; top: 4px;
+    width: 9px; height: 9px; border-radius: 50%; background: var(--teal);
+    border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--teal);
+  }
+  .timeline-item::after {
+    content: ''; position: absolute; left: -14px; top: 14px; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .timeline-item:last-child::after { display: none; }
+  .timeline-date {
+    font-size: 11.5px; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.02em;
+    margin: 0 0 3px;
+  }
+  .timeline-text { font-size: 13.5px; margin: 0; line-height: 1.5; }
+  .timeline-empty { font-size: 13px; color: var(--text-muted); padding: 6px 0 4px; }
+
+  .intercorrencia-form {
+    display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 18px;
+  }
+  .intercorrencia-form.open { display: block; }
+  .form-label {
+    font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--text-muted); display: block; margin-bottom: 5px;
+  }
+  .form-field { margin-bottom: 12px; }
+  .form-field:last-of-type { margin-bottom: 14px; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 9px 10px;
+    font-size: 13.5px; font-family: inherit; color: var(--text); background: var(--surface);
+    outline: none;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--navy); }
+  .form-textarea { resize: vertical; min-height: 70px; line-height: 1.4; }
+  .form-actions { display: flex; gap: 8px; }
+  .btn-save {
+    background: var(--teal); color: #fff; border: none; padding: 9px 16px; border-radius: 7px;
+    font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-save:hover { background: #26746F; }
+  .btn-cancel {
+    background: transparent; color: var(--text-muted); border: none; padding: 9px 12px;
+    font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-cancel:hover { text-decoration: underline; }
+  .btn-row-action {
+    background: rgba(46,139,135,0.1); color: var(--teal); border: none; padding: 6px 12px;
+    border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .btn-row-action:hover { background: rgba(46,139,135,0.18); }
+  .timeline-author { font-size: 12px; color: var(--text-muted); margin: 3px 0 0; font-style: italic; }
+
+  /* Modal: Novo Acolhimento */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(18,40,63,0.45);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 40;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--surface); border-radius: 14px; width: 100%; max-width: 560px;
+    max-height: 88vh; display: flex; flex-direction: column;
+    transform: translateY(12px) scale(0.98); transition: transform 0.2s ease;
+    box-shadow: 0 20px 50px rgba(18,40,63,0.25);
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header h3 { margin: 0; font-size: 16.5px; font-weight: 700; }
+  .modal-body { padding: 22px 24px; overflow-y: auto; }
+  .modal-footer {
+    padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .radio-group { display: flex; gap: 10px; }
+  .radio-option {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer;
+    font-size: 13.5px; font-weight: 600; color: var(--text-muted);
+  }
+  .radio-option input { accent-color: var(--navy); }
+  .radio-option.selected { border-color: var(--navy); background: rgba(27,58,92,0.05); color: var(--text); }
+  .conditional-panel {
+    display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-top: 12px;
+  }
+  .conditional-panel.open { display: block; }
+  .form-hint { font-size: 12px; color: var(--text-muted); margin: -8px 0 14px; }
+
+  /* Gravidade */
+  .grav-badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+  }
+  .grav-normal { background: var(--teal-light); color: #1F6B67; }
+  .grav-atencao { background: var(--amber-light); color: #8A5A12; }
+  .grav-urgente { background: var(--danger-light); color: #9B3D33; }
+  .radio-option.grav-opt.selected[data-value="normal"] { border-color: var(--teal); background: rgba(46,139,135,0.06); color: var(--text); }
+  .radio-option.grav-opt.selected[data-value="atencao"] { border-color: var(--amber); background: rgba(232,163,61,0.08); color: var(--text); }
+  .radio-option.grav-opt.selected[data-value="urgente"] { border-color: var(--danger); background: rgba(199,85,74,0.08); color: var(--text); }
+
+  /* Status clicável no prontuário */
+  .status-select {
+    border: none; outline: none; cursor: pointer; font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+    padding: 4px 22px 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235B6B78' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat; background-position: right 7px center;
+  }
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="app">
+  <!-- Overlay usado quando a sidebar vira gaveta no mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-box">A</div>
+      <div>
+        <p class="brand-name">Acolhe</p>
+        <p class="brand-sub">Gestão de Abrigos</p>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-page="Dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-page="Vagas">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+        <span>Vagas</span>
+      </button>
+      <button class="nav-item" data-page="Acolhidos">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Acolhidos</span>
+      </button>
+      <button class="nav-item" data-page="Equipe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+        <span>Equipe</span>
+      </button>
+      <button class="nav-item" data-page="Doações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
+        <span>Doações</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar">EQ</div>
+        <div>
+          <p class="user-name">Equipe Técnica</p>
+          <p class="user-role">Casa de Acolhida</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" id="toggle-sidebar">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <button class="icon-btn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="notif-dot"></span>
+      </button>
+    </header>
+
+    <main class="content">
+    <section class="page active" id="page-Dashboard">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Visão geral do abrigo</h2>
+          <p class="content-subtitle">Resumo consolidado de vagas, acolhidos, equipe e doações</p>
+        </div>
+        <span class="badge-demo">Preview estático — dados de exemplo</span>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Vagas ocupadas</span>
+            <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value">34/40</div>
+          <div class="kpi-helper">85% de ocupação</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Acolhidos ativos</span>
+            <div class="kpi-icon" style="background:rgba(46,139,135,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E8B87" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpi-acolhidos-ativos">—</div>
+          <div class="kpi-helper">Sob cuidado atualmente</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Equipe ativa</span>
+            <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-helper">Profissionais e voluntários</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Doações no mês</span>
+            <div class="kpi-icon" style="background:rgba(232,163,61,0.15)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value">27</div>
+          <div class="kpi-helper">R$ 8.450 arrecadados</div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="stack">
+          <!-- Occupancy -->
+          <div class="card">
+            <p class="card-title">Ocupação de vagas</p>
+            <div class="occ-row">
+              <span style="font-weight:600">34 ocupadas de 40 vagas</span>
+              <strong>85%</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:85%"></div>
+            </div>
+            <div class="legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#1B3A5C"></span>
+                Ocupadas (34)
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#E4F2F1;border:1px solid #E3E8EC"></span>
+                Disponíveis (6)
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent activity -->
+          <div class="card">
+            <p class="card-title">Atividade recente</p>
+            <div class="activity-item">
+              <div class="activity-avatar" style="background:rgba(46,139,135,0.12);color:#2E8B87">A</div>
+              <div>
+                <p class="activity-desc">Novo acolhimento registrado — Quarto 4, Leito A</p>
+                <p class="activity-meta">Acolhimento · há 2h</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-avatar" style="background:rgba(232,163,61,0.15);color:#E8A33D">D</div>
+              <div>
+                <p class="activity-desc">Doação de alimentos recebida — Mercado Central</p>
+                <p class="activity-meta">Doação · há 5h</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-avatar" style="background:rgba(27,58,92,0.1);color:#1B3A5C">V</div>
+              <div>
+                <p class="activity-desc">Leito liberado — Quarto 2, Leito C</p>
+                <p class="activity-meta">Vaga · ontem</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-avatar" style="background:rgba(46,139,135,0.12);color:#2E8B87">E</div>
+              <div>
+                <p class="activity-desc">Novo voluntário cadastrado — plantão noturno</p>
+                <p class="activity-meta">Equipe · há 2 dias</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <!-- Alerts -->
+          <div class="card">
+            <div class="alert-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C7554A" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <p class="card-title" style="margin:0">Pontos de atenção</p>
+            </div>
+            <div id="dashboard-alertas"></div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="card">
+            <p class="card-title">Ações rápidas</p>
+            <div class="quick-action">
+              <span>Registrar novo acolhimento</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+            <div class="quick-action">
+              <span>Lançar doação recebida</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+            <div class="quick-action">
+              <span>Atualizar status de vaga</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PÁGINA: VAGAS ===== -->
+    <section class="page" id="page-Vagas">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Vagas</h2>
+          <p class="content-subtitle">Gestão de leitos, unidades e status de ocupação</p>
+        </div>
+        <button class="btn-primary" id="btn-nova-vaga">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova vaga
+        </button>
+      </div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Identificação</th>
+              <th>Unidade</th>
+              <th>Status</th>
+              <th>Ocupado por</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="vagas-tbody"></tbody>
+        </table>
+      </div>
+      <p class="content-subtitle" style="margin-top:10px;">Use o botão "Atribuir / Trocar" para colocar, remover ou mover um acolhido de leito.</p>
+    </section>
+
+    <!-- ===== PÁGINA: ACOLHIDOS ===== -->
+    <section class="page" id="page-Acolhidos">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Acolhidos</h2>
+          <p class="content-subtitle">Cadastro, prontuário e acompanhamento técnico</p>
+        </div>
+        <button class="btn-primary" id="btn-novo-acolhimento">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo acolhimento
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="acolhidos-search" placeholder="Buscar por nome..." />
+        </div>
+        <div class="filter-chips" id="acolhidos-filters">
+          <button class="filter-chip active" data-status="todos">Todos (<span id="count-todos">8</span>)</button>
+          <button class="filter-chip" data-status="ativo">Ativos (<span id="count-ativo">5</span>)</button>
+          <button class="filter-chip" data-status="em_avaliacao">Em avaliação (<span id="count-em_avaliacao">2</span>)</button>
+          <button class="filter-chip" data-status="desligado">Desligados (<span id="count-desligado">1</span>)</button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Idade</th>
+              <th>Status</th>
+              <th>Vaga</th>
+              <th>Entrada</th>
+              <th>Responsável técnico</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="acolhidos-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== PÁGINA: EQUIPE ===== -->
+    <section class="page" id="page-Equipe">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Equipe</h2>
+          <p class="content-subtitle">Profissionais, voluntários e escalas</p>
+        </div>
+        <button class="btn-primary" id="btn-novo-membro">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo membro
+        </button>
+      </div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Cargo</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="equipe-tbody"></tbody>
+        </table>
+      </div>
+      <p class="content-subtitle" style="margin-top:10px;">Clique no status de um membro para alternar entre Ativo e Inativo. Apenas membros ativos aparecem como opção de Responsável técnico no cadastro de acolhimento.</p>
+    </section>
+
+    <!-- ===== PÁGINA: DOAÇÕES ===== -->
+    <section class="page" id="page-Doações">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Doações</h2>
+          <p class="content-subtitle">Registro de doações financeiras e materiais</p>
+        </div>
+        <span class="badge-demo">Preview estático — dados de exemplo</span>
+      </div>
+      <div class="card" style="text-align:center; padding:48px 24px; border-style:dashed;">
+        <p style="font-weight:700; margin:0 0 6px;">Módulo em construção</p>
+        <p class="content-subtitle" style="margin:0;">Vamos desenhar esse painel em seguida.</p>
+      </div>
+    </section>
+    </main>
+  </div>
+</div>
+
+<!-- Drawer: Prontuário do Acolhido -->
+<div class="overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer-prontuario">
+  <div class="drawer-header">
+    <h3>Prontuário</h3>
+    <button class="drawer-close" id="drawer-close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-profile">
+      <div class="drawer-avatar" id="drawer-avatar">--</div>
+      <div>
+        <p class="drawer-name" id="drawer-name">—</p>
+        <select class="status-badge status-select" id="drawer-status">
+          <option value="ativo">Ativo</option>
+          <option value="em_avaliacao">Em avaliação</option>
+          <option value="desligado">Desligado</option>
+        </select>
+      </div>
+    </div>
+    <div class="drawer-grid">
+      <div class="drawer-field">
+        <p class="drawer-field-label">Idade</p>
+        <p class="drawer-field-value" id="drawer-idade">—</p>
+      </div>
+      <div class="drawer-field">
+        <p class="drawer-field-label">Vaga atual</p>
+        <p class="drawer-field-value" id="drawer-vaga">—</p>
+      </div>
+      <div class="drawer-field">
+        <p class="drawer-field-label">Data de entrada</p>
+        <p class="drawer-field-value" id="drawer-entrada">—</p>
+      </div>
+      <div class="drawer-field">
+        <p class="drawer-field-label">Responsável técnico</p>
+        <p class="drawer-field-value" id="drawer-responsavel">—</p>
+      </div>
+    </div>
+    <div class="drawer-field">
+      <p class="drawer-field-label">Observações técnicas</p>
+      <p class="drawer-field-value" id="drawer-obs">—</p>
+    </div>
+
+    <div class="drawer-section-title">
+      <h4>Intercorrências</h4>
+      <button class="btn-link" id="btn-toggle-form">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar
+      </button>
+    </div>
+
+    <div class="intercorrencia-form" id="intercorrencia-form">
+      <div class="form-field">
+        <label class="form-label" for="int-data">Data</label>
+        <input type="date" class="form-input" id="int-data" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="int-obs">Observação</label>
+        <textarea class="form-textarea" id="int-obs" placeholder="Descreva o que aconteceu..."></textarea>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Gravidade</label>
+        <div class="radio-group" id="int-gravidade-group">
+          <label class="radio-option grav-opt selected" data-value="normal">
+            <input type="radio" name="int-gravidade" value="normal" checked /> Normal
+          </label>
+          <label class="radio-option grav-opt" data-value="atencao">
+            <input type="radio" name="int-gravidade" value="atencao" /> Atenção
+          </label>
+          <label class="radio-option grav-opt" data-value="urgente">
+            <input type="radio" name="int-gravidade" value="urgente" /> Urgente
+          </label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" id="btn-save-intercorrencia">Salvar no histórico</button>
+        <button class="btn-cancel" id="btn-cancel-intercorrencia">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="timeline" id="drawer-timeline"></div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn-secondary">Editar cadastro</button>
+    <button class="btn-secondary" id="btn-desligar">Desligar acolhido</button>
+  </div>
+</aside>
+
+<!-- Modal: Novo Acolhimento -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo acolhimento</h3>
+      <button class="drawer-close" id="modal-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="na-nome">Nome completo</label>
+        <input type="text" class="form-input" id="na-nome" placeholder="Nome completo do acolhido" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="na-cpf">CPF</label>
+          <input type="text" class="form-input" id="na-cpf" placeholder="000.000.000-00" maxlength="14" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="na-nascimento">Data de nascimento</label>
+          <input type="date" class="form-input" id="na-nascimento" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label" for="na-ultimo">Último acolhimento (se houver)</label>
+        <input type="date" class="form-input" id="na-ultimo" />
+        <p class="form-hint" style="margin-top:6px;">Data da última vez em que esteve em algum abrigo/instituição, se aplicável.</p>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label" for="na-origem">Encaminhado</label>
+        <input type="text" class="form-input" id="na-origem" placeholder="Ex: CREAS, hospital, outro abrigo, rua, conselho tutelar..." />
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="na-vaga">Vaga</label>
+          <select class="form-select" id="na-vaga">
+            <option value="">Sem vaga definida ainda</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="na-responsavel">Responsável técnico</label>
+          <select class="form-select" id="na-responsavel">
+            <option value="">A definir</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Possui deficiência?</label>
+        <div class="radio-group" id="na-deficiencia-group">
+          <label class="radio-option" data-value="nao">
+            <input type="radio" name="na-deficiencia" value="nao" checked /> Não
+          </label>
+          <label class="radio-option" data-value="sim">
+            <input type="radio" name="na-deficiencia" value="sim" /> Sim
+          </label>
+        </div>
+      </div>
+
+      <div class="conditional-panel" id="na-deficiencia-painel">
+        <div class="form-field" style="margin-bottom:0;">
+          <label class="form-label" for="na-qual-deficiencia">Qual deficiência</label>
+          <input type="text" class="form-input" id="na-qual-deficiencia" placeholder="Ex: deficiência física, visual, auditiva, intelectual..." />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-save">Registrar acolhimento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova Vaga -->
+<div class="modal-overlay" id="modal-vaga-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova vaga</h3>
+      <button class="drawer-close" id="modal-vaga-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="nv-identificacao">Identificação</label>
+        <input type="text" class="form-input" id="nv-identificacao" placeholder="Ex: Leito 01, Quarto 3..." />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nv-unidade">Unidade</label>
+        <input type="text" class="form-input" id="nv-unidade" placeholder="Ex: Casa de Acolhimento Central" />
+      </div>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="nv-status">Status</label>
+        <select class="form-select" id="nv-status">
+          <option value="disponivel">Disponível</option>
+          <option value="ocupada">Ocupada</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-vaga-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-vaga-save">Salvar vaga</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Atribuir/Trocar acolhido em uma vaga -->
+<div class="modal-overlay" id="modal-atribuir-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="atribuir-titulo">Atribuir vaga</h3>
+      <button class="drawer-close" id="modal-atribuir-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="at-acolhido">Acolhido</label>
+        <select class="form-select" id="at-acolhido">
+          <option value="">— Deixar vaga livre —</option>
+        </select>
+        <p class="content-subtitle" style="margin-top:8px;">Se o acolhido escolhido já estiver em outra vaga, ele sai de lá e a vaga anterior fica disponível automaticamente.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-atribuir-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-atribuir-save">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-membro-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo membro da equipe</h3>
+      <button class="drawer-close" id="modal-membro-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="nm-nome">Nome completo</label>
+        <input type="text" class="form-input" id="nm-nome" placeholder="Nome completo do profissional" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nm-cargo">Cargo</label>
+        <select class="form-select" id="nm-cargo">
+          <option value="assistente_social">Assistente Social</option>
+          <option value="psicologo">Psicólogo(a)</option>
+          <option value="coordenador">Coordenador(a)</option>
+          <option value="cuidador">Cuidador(a)</option>
+          <option value="voluntario">Voluntário(a)</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <label class="radio-option" style="cursor:pointer; display:inline-flex; margin-top:2px;">
+        <input type="checkbox" id="nm-ativo" checked style="accent-color:var(--navy); margin-right:6px;" /> Membro ativo (disponível para ser atribuído como responsável técnico)
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-membro-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-membro-save">Salvar membro</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== Navegação entre páginas =====
+  var sidebarEl = document.getElementById('sidebar');
+  var sidebarOverlayEl = document.getElementById('sidebar-overlay');
+
+  function ehMobile() {
+    return window.matchMedia('(max-width: 860px)').matches;
+  }
+  function fecharSidebarMobile() {
+    sidebarEl.classList.remove('mobile-open');
+    sidebarOverlayEl.classList.remove('open');
+  }
+
+  document.querySelectorAll('.nav-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('page-title').textContent = btn.dataset.page;
+
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      var target = document.getElementById('page-' + btn.dataset.page);
+      if (target) target.classList.add('active');
+
+      // No celular, escolher uma página fecha a gaveta de navegação
+      if (ehMobile()) fecharSidebarMobile();
+    });
+  });
+
+  // No desktop o botão de menu recolhe a sidebar (modo ícones);
+  // no mobile/tablet ele abre/fecha a gaveta com overlay.
+  document.getElementById('toggle-sidebar').addEventListener('click', function() {
+    if (ehMobile()) {
+      sidebarEl.classList.toggle('mobile-open');
+      sidebarOverlayEl.classList.toggle('open');
+    } else {
+      sidebarEl.classList.toggle('collapsed');
+    }
+  });
+  sidebarOverlayEl.addEventListener('click', fecharSidebarMobile);
+  window.addEventListener('resize', function() {
+    if (!ehMobile()) fecharSidebarMobile();
+  });
+
+  // ===== Conexão com o Supabase =====
+  var SUPABASE_URL = 'https://idtnkbhrliubdtrjoptl.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkdG5rYmhybGl1YmR0cmpvcHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzODkwOTEsImV4cCI6MjA5OTk2NTA5MX0.aRB0y8cby_F1tFRkX_FnutuZrjmklGBSJm2jkXBEGlE';
+  var db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Dados carregados do banco (populados por carregarAcolhidos)
+  var ACOLHIDOS = [];
+
+  var STATUS_LABEL = { ativo: 'Ativo', em_avaliacao: 'Em avaliação', desligado: 'Desligado' };
+  var STATUS_CLASS = { ativo: 'status-ativo', em_avaliacao: 'status-avaliacao', desligado: 'status-desligado' };
+
+  // Calcula a idade a partir da data de nascimento (a tabela não guarda idade pronta)
+  function calcularIdade(dataNascimento) {
+    if (!dataNascimento) return '—';
+    var hoje = new Date();
+    var nasc = new Date(dataNascimento + 'T00:00:00');
+    var idade = hoje.getFullYear() - nasc.getFullYear();
+    var aindaNaoFezAniversario = (hoje.getMonth() < nasc.getMonth()) ||
+      (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate());
+    if (aindaNaoFezAniversario) idade--;
+    return idade;
+  }
+
+  // Converte uma linha vinda do Supabase (colunas reais da tabela) para o formato usado na tela
+  function mapAcolhidoDoBanco(row) {
+    return {
+      id: row.id,
+      nome: row.nome_completo,
+      idade: calcularIdade(row.data_nascimento),
+      status: row.status,
+      vaga: row.vagas ? (row.vagas.identificacao + ' — ' + row.vagas.unidade) : '—',
+      entrada: formatarData(row.data_entrada),
+      responsavel: nomeResponsavelPorId(row.responsavel_tecnico_id) || (row.responsavel_tecnico_id ? 'Responsável atribuído' : 'A definir'),
+      obs: row.observacoes || '',
+      intercorrencias: (row.intercorrencias || []).map(function(i) {
+        return {
+          id: i.id, data: i.data, texto: i.texto, gravidade: i.gravidade,
+          // registrado_por é um UUID (sem login ainda não dá pra mostrar o nome de quem registrou)
+          registradoPor: i.registrado_por ? 'Equipe técnica' : 'Equipe Técnica (login pendente)',
+        };
+      }),
+    };
+  }
+
+  async function carregarAcolhidos() {
+    var tbody = document.getElementById('acolhidos-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando acolhidos...</td></tr>';
+    }
+
+    var resultado = await db
+      .from('acolhidos')
+      .select('*, intercorrencias(*), vagas(identificacao, unidade)')
+      .order('created_at', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar acolhidos do Supabase:', resultado.error);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar os dados do Supabase. Verifique a conexão e as tabelas do banco.</td></tr>';
+      }
+      return;
+    }
+
+    ACOLHIDOS = resultado.data.map(mapAcolhidoDoBanco);
+    renderAcolhidos();
+    renderAlertasDashboard();
+
+    var kpiAtivos = document.getElementById('kpi-acolhidos-ativos');
+    if (kpiAtivos) {
+      kpiAtivos.textContent = ACOLHIDOS.filter(function(a) { return a.status === 'ativo'; }).length;
+    }
+  }
+
+  function iniciais(nome) {
+    var partes = nome.trim().split(' ');
+    var a = partes[0] ? partes[0][0] : '';
+    var b = partes.length > 1 ? partes[partes.length - 1][0] : '';
+    return (a + b).toUpperCase();
+  }
+
+  function renderAcolhidos() {
+    var tbody = document.getElementById('acolhidos-tbody');
+    var filtro = document.querySelector('.filter-chip.active').dataset.status;
+    var busca = document.getElementById('acolhidos-search').value.toLowerCase();
+
+    document.getElementById('count-todos').textContent = ACOLHIDOS.length;
+    document.getElementById('count-ativo').textContent = ACOLHIDOS.filter(function(a) { return a.status === 'ativo'; }).length;
+    document.getElementById('count-em_avaliacao').textContent = ACOLHIDOS.filter(function(a) { return a.status === 'em_avaliacao'; }).length;
+    document.getElementById('count-desligado').textContent = ACOLHIDOS.filter(function(a) { return a.status === 'desligado'; }).length;
+
+    var lista = ACOLHIDOS.filter(function(a) {
+      var passaFiltro = filtro === 'todos' || a.status === filtro;
+      var passaBusca = a.nome.toLowerCase().indexOf(busca) !== -1;
+      return passaFiltro && passaBusca;
+    });
+
+    tbody.innerHTML = '';
+    lista.forEach(function(a, idx) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><div class="name-cell"><div class="name-avatar">' + iniciais(a.nome) + '</div>' + a.nome + '</div></td>' +
+        '<td>' + a.idade + ' anos</td>' +
+        '<td><span class="status-badge ' + STATUS_CLASS[a.status] + '">' + STATUS_LABEL[a.status] + '</span></td>' +
+        '<td>' + a.vaga + '</td>' +
+        '<td>' + a.entrada + '</td>' +
+        '<td>' + a.responsavel + '</td>' +
+        '<td><svg class="row-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>';
+      tr.addEventListener('click', function() { abrirProntuario(a); });
+      tbody.appendChild(tr);
+    });
+
+    if (lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum acolhido encontrado.</td></tr>';
+    }
+  }
+
+  document.querySelectorAll('.filter-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderAcolhidos();
+    });
+  });
+  document.getElementById('acolhidos-search').addEventListener('input', renderAcolhidos);
+
+  // ===== Drawer: Prontuário =====
+  var acolhidoAtual = null;
+
+  function formatarData(isoOuBr) {
+    // aceita "AAAA-MM-DD" (input date) e converte para "DD/MM/AAAA"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoOuBr)) {
+      var p = isoOuBr.split('-');
+      return p[2] + '/' + p[1] + '/' + p[0];
+    }
+    return isoOuBr;
+  }
+
+  var GRAV_LABEL = { normal: 'Normal', atencao: 'Atenção', urgente: 'Urgente' };
+  var GRAV_CLASS = { normal: 'grav-normal', atencao: 'grav-atencao', urgente: 'grav-urgente' };
+
+  function renderTimeline() {
+    var container = document.getElementById('drawer-timeline');
+    if (!acolhidoAtual || !acolhidoAtual.intercorrencias.length) {
+      container.innerHTML = '<p class="timeline-empty">Nenhuma intercorrência registrada até o momento.</p>';
+      return;
+    }
+    var ordenadas = acolhidoAtual.intercorrencias.slice().sort(function(a, b) {
+      return b.data.localeCompare(a.data);
+    });
+    container.innerHTML = ordenadas.map(function(item) {
+      var grav = item.gravidade || 'normal';
+      return '<div class="timeline-item">' +
+        '<div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">' +
+        '<p class="timeline-date" style="margin:0;">' + formatarData(item.data) + '</p>' +
+        '<span class="grav-badge ' + GRAV_CLASS[grav] + '">' + GRAV_LABEL[grav] + '</span>' +
+        '</div>' +
+        '<p class="timeline-text">' + item.texto + '</p>' +
+        '<p class="timeline-author">Registrado por: ' + (item.registradoPor || '—') + '</p>' +
+        '</div>';
+    }).join('');
+  }
+
+  function aplicarClasseStatus(select, status) {
+    select.classList.remove('status-ativo', 'status-avaliacao', 'status-desligado');
+    select.classList.add(STATUS_CLASS[status]);
+  }
+
+  function abrirProntuario(a) {
+    acolhidoAtual = a;
+    document.getElementById('drawer-avatar').textContent = iniciais(a.nome);
+    document.getElementById('drawer-name').textContent = a.nome;
+    var statusEl = document.getElementById('drawer-status');
+    statusEl.value = a.status;
+    aplicarClasseStatus(statusEl, a.status);
+    document.getElementById('drawer-idade').textContent = a.idade + ' anos';
+    document.getElementById('drawer-vaga').textContent = a.vaga;
+    document.getElementById('drawer-entrada').textContent = a.entrada;
+    document.getElementById('drawer-responsavel').textContent = a.responsavel;
+    document.getElementById('drawer-obs').textContent = a.obs;
+
+    document.getElementById('intercorrencia-form').classList.remove('open');
+    renderTimeline();
+
+    document.getElementById('drawer-prontuario').classList.add('open');
+    document.getElementById('drawer-overlay').classList.add('open');
+  }
+  function fecharProntuario() {
+    document.getElementById('drawer-prontuario').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('open');
+  }
+  document.getElementById('drawer-close').addEventListener('click', fecharProntuario);
+  document.getElementById('drawer-overlay').addEventListener('click', fecharProntuario);
+
+  document.getElementById('drawer-status').addEventListener('change', async function(e) {
+    var novoStatus = e.target.value;
+    var statusAnterior = acolhidoAtual.status;
+    acolhidoAtual.status = novoStatus;
+    aplicarClasseStatus(e.target, novoStatus);
+    renderAcolhidos();
+    renderAlertasDashboard();
+
+    var resultado = await db.from('acolhidos').update({ status: novoStatus }).eq('id', acolhidoAtual.id);
+    if (resultado.error) {
+      console.error('Erro ao atualizar status no Supabase:', resultado.error);
+      alert('Não foi possível salvar a mudança de status no banco. Tente novamente.');
+      acolhidoAtual.status = statusAnterior;
+      e.target.value = statusAnterior;
+      aplicarClasseStatus(e.target, statusAnterior);
+      renderAcolhidos();
+      renderAlertasDashboard();
+    }
+  });
+
+  // ===== Alertas dinâmicos do Dashboard =====
+  function renderAlertasDashboard() {
+    var container = document.getElementById('dashboard-alertas');
+    if (!container) return;
+
+    var html = '';
+
+    var emAvaliacao = ACOLHIDOS.filter(function(a) { return a.status === 'em_avaliacao'; }).length;
+    if (emAvaliacao > 0) {
+      html += '<div class="alert-box alert-medium">' + emAvaliacao + ' acolhido(s) aguardando avaliação técnica inicial</div>';
+    }
+
+    // Toda intercorrência registrada entra aqui, mais recente primeiro
+    var itens = [];
+    ACOLHIDOS.forEach(function(a) {
+      a.intercorrencias.forEach(function(i) {
+        itens.push({ nome: a.nome, data: i.data, texto: i.texto, gravidade: i.gravidade || 'normal' });
+      });
+    });
+    itens.sort(function(a, b) { return b.data.localeCompare(a.data); });
+
+    var CLASS_POR_GRAVIDADE = { urgente: 'alert-high', atencao: 'alert-medium', normal: 'alert-normal' };
+
+    itens.forEach(function(item) {
+      html += '<div class="alert-box ' + CLASS_POR_GRAVIDADE[item.gravidade] + '">' +
+        '<strong>' + item.nome + ':</strong> ' + item.texto +
+        '<div class="alert-box-date">' + formatarData(item.data) + '</div>' +
+        '</div>';
+    });
+
+    if (!html) {
+      html = '<p class="timeline-empty" style="padding:0;">Nenhum ponto de atenção no momento.</p>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  // ===== Formulário de nova intercorrência =====
+  var intForm = document.getElementById('intercorrencia-form');
+
+  function hojeISO() {
+    var d = new Date();
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  document.getElementById('btn-toggle-form').addEventListener('click', function() {
+    intForm.classList.toggle('open');
+    if (intForm.classList.contains('open')) {
+      document.getElementById('int-data').value = hojeISO();
+      document.getElementById('int-obs').focus();
+    }
+  });
+  document.getElementById('btn-cancel-intercorrencia').addEventListener('click', function() {
+    intForm.classList.remove('open');
+    document.getElementById('int-obs').value = '';
+  });
+
+  function atualizarGravidadeVisual() {
+    document.querySelectorAll('#int-gravidade-group .radio-option').forEach(function(opt) {
+      var input = opt.querySelector('input');
+      opt.classList.toggle('selected', input.checked);
+    });
+  }
+  document.querySelectorAll('input[name="int-gravidade"]').forEach(function(radio) {
+    radio.addEventListener('change', atualizarGravidadeVisual);
+  });
+
+  document.getElementById('btn-save-intercorrencia').addEventListener('click', async function() {
+    var data = document.getElementById('int-data').value;
+    var texto = document.getElementById('int-obs').value.trim();
+    var gravidade = document.querySelector('input[name="int-gravidade"]:checked').value;
+    if (!data || !texto) {
+      alert('Preencha a data e a observação antes de salvar.');
+      return;
+    }
+
+    var botaoSalvar = document.getElementById('btn-save-intercorrencia');
+    botaoSalvar.disabled = true;
+
+    // registrado_por é uma coluna UUID (referência a um usuário/equipe) — sem login ainda,
+    // deixamos em branco no banco e usamos esse texto só como exibição local.
+    var registradoPor = 'Equipe Técnica (login pendente)';
+    var resultado = await db.from('intercorrencias').insert({
+      acolhido_id: acolhidoAtual.id,
+      data: data,
+      texto: texto,
+      gravidade: gravidade,
+    }).select().single();
+
+    botaoSalvar.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao salvar intercorrência no Supabase:', resultado.error);
+      alert('Não foi possível salvar a intercorrência no banco. Tente novamente.');
+      return;
+    }
+
+    acolhidoAtual.intercorrencias.push({
+      id: resultado.data.id, data: data, texto: texto, gravidade: gravidade, registradoPor: registradoPor,
+    });
+    document.getElementById('int-obs').value = '';
+    document.querySelector('input[name="int-gravidade"][value="normal"]').checked = true;
+    atualizarGravidadeVisual();
+    intForm.classList.remove('open');
+    renderTimeline();
+    renderAlertasDashboard();
+  });
+
+  // ===== Equipe =====
+  var EQUIPE = [];
+
+  // Busca o nome de um membro da equipe a partir do id salvo em responsavel_tecnico_id
+  function nomeResponsavelPorId(id) {
+    if (!id) return null;
+    var membro = EQUIPE.find(function(m) { return m.id === id; });
+    return membro ? membro.nome_completo : null;
+  }
+
+  var CARGO_LABEL = {
+    assistente_social: 'Assistente Social',
+    psicologo: 'Psicólogo(a)',
+    coordenador: 'Coordenador(a)',
+    cuidador: 'Cuidador(a)',
+    voluntario: 'Voluntário(a)',
+    outro: 'Outro',
+  };
+
+  async function carregarEquipe() {
+    var tbody = document.getElementById('equipe-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando equipe...</td></tr>';
+    }
+
+    var resultado = await db
+      .from('equipe')
+      .select('id, nome_completo, cargo, ativo')
+      .order('nome_completo', { ascending: true });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar equipe do Supabase:', resultado.error);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar a equipe.</td></tr>';
+      }
+      return;
+    }
+
+    EQUIPE = resultado.data;
+    renderEquipe();
+  }
+
+  function renderEquipe() {
+    var tbody = document.getElementById('equipe-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    EQUIPE.forEach(function(m) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + m.nome_completo + '</td>' +
+        '<td>' + (CARGO_LABEL[m.cargo] || m.cargo || '—') + '</td>' +
+        '<td><span class="status-badge ' + (m.ativo ? 'status-ativo' : 'status-desligado') + '" data-id="' + m.id + '" data-ativo="' + m.ativo + '" style="cursor:pointer;">' + (m.ativo ? 'Ativo' : 'Inativo') + '</span></td>';
+      tbody.appendChild(tr);
+    });
+    if (EQUIPE.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum membro cadastrado ainda.</td></tr>';
+    }
+    tbody.querySelectorAll('.status-badge').forEach(function(badge) {
+      badge.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        var id = badge.dataset.id;
+        var ativoAtual = badge.dataset.ativo === 'true';
+        var resultado = await db.from('equipe').update({ ativo: !ativoAtual }).eq('id', id);
+        if (resultado.error) {
+          console.error('Erro ao atualizar status do membro:', resultado.error);
+          alert('Não foi possível atualizar o status do membro.');
+          return;
+        }
+        await carregarEquipe();
+        await carregarAcolhidos();
+      });
+    });
+  }
+
+  function abrirModalMembro() {
+    document.getElementById('nm-nome').value = '';
+    document.getElementById('nm-cargo').value = 'assistente_social';
+    document.getElementById('nm-ativo').checked = true;
+    document.getElementById('modal-membro-overlay').classList.add('open');
+  }
+  function fecharModalMembro() {
+    document.getElementById('modal-membro-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-novo-membro').addEventListener('click', abrirModalMembro);
+  document.getElementById('modal-membro-close').addEventListener('click', fecharModalMembro);
+  document.getElementById('modal-membro-cancel').addEventListener('click', fecharModalMembro);
+  document.getElementById('modal-membro-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-membro-overlay')) fecharModalMembro();
+  });
+
+  document.getElementById('modal-membro-save').addEventListener('click', async function() {
+    var nome = document.getElementById('nm-nome').value.trim();
+    var cargo = document.getElementById('nm-cargo').value;
+    var ativo = document.getElementById('nm-ativo').checked;
+
+    if (!nome) {
+      alert('Preencha o nome completo do membro.');
+      return;
+    }
+
+    var botao = document.getElementById('modal-membro-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('equipe').insert({
+      nome_completo: nome,
+      cargo: cargo,
+      ativo: ativo,
+    });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao cadastrar membro da equipe:', resultado.error);
+      alert('Não foi possível cadastrar o membro. Tente novamente.');
+      return;
+    }
+
+    fecharModalMembro();
+    await carregarEquipe();
+  });
+
+  // ===== Vagas =====
+  var VAGAS = [];
+
+  async function carregarVagas() {
+    var tbody = document.getElementById('vagas-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando vagas...</td></tr>';
+    }
+
+    var resultado = await db
+      .from('vagas')
+      .select('id, identificacao, unidade, status, acolhidos(id, nome_completo, status)')
+      .order('identificacao', { ascending: true });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar vagas do Supabase:', resultado.error);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar as vagas.</td></tr>';
+      }
+      return;
+    }
+
+    VAGAS = resultado.data;
+    renderVagas();
+  }
+
+  // Retorna o acolhido que ocupa essa vaga hoje (ignorando quem já foi desligado)
+  function ocupanteDaVaga(v) {
+    var lista = v.acolhidos || [];
+    for (var i = 0; i < lista.length; i++) {
+      if (lista[i].status !== 'desligado') return lista[i];
+    }
+    return null;
+  }
+
+  function renderVagas() {
+    var tbody = document.getElementById('vagas-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    VAGAS.forEach(function(v) {
+      var ocupante = ocupanteDaVaga(v);
+      var disponivel = v.status === 'disponivel';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + v.identificacao + '</td>' +
+        '<td>' + (v.unidade || '—') + '</td>' +
+        '<td><span class="status-badge ' + (disponivel ? 'status-ativo' : 'status-avaliacao') + '">' + (disponivel ? 'Disponível' : 'Ocupada') + '</span></td>' +
+        '<td>' + (ocupante ? ocupante.nome_completo : '—') + '</td>' +
+        '<td><button class="btn-row-action" data-vaga-id="' + v.id + '">' + (ocupante ? 'Trocar' : 'Atribuir') + '</button></td>';
+      tbody.appendChild(tr);
+    });
+    if (VAGAS.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhuma vaga cadastrada ainda.</td></tr>';
+    }
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var vaga = VAGAS.find(function(v) { return v.id === botao.dataset.vagaId; });
+        if (vaga) abrirModalAtribuir(vaga);
+      });
+    });
+  }
+
+  function abrirModalVaga() {
+    document.getElementById('nv-identificacao').value = '';
+    document.getElementById('nv-unidade').value = '';
+    document.getElementById('nv-status').value = 'disponivel';
+    document.getElementById('modal-vaga-overlay').classList.add('open');
+  }
+  function fecharModalVaga() {
+    document.getElementById('modal-vaga-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-nova-vaga').addEventListener('click', abrirModalVaga);
+  document.getElementById('modal-vaga-close').addEventListener('click', fecharModalVaga);
+  document.getElementById('modal-vaga-cancel').addEventListener('click', fecharModalVaga);
+  document.getElementById('modal-vaga-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-vaga-overlay')) fecharModalVaga();
+  });
+
+  document.getElementById('modal-vaga-save').addEventListener('click', async function() {
+    var identificacao = document.getElementById('nv-identificacao').value.trim();
+    var unidade = document.getElementById('nv-unidade').value.trim();
+    var status = document.getElementById('nv-status').value;
+
+    if (!identificacao || !unidade) {
+      alert('Preencha a identificação e a unidade da vaga.');
+      return;
+    }
+
+    var botao = document.getElementById('modal-vaga-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('vagas').insert({
+      identificacao: identificacao,
+      unidade: unidade,
+      status: status,
+    });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao cadastrar vaga:', resultado.error);
+      alert('Não foi possível cadastrar a vaga. Tente novamente.');
+      return;
+    }
+
+    fecharModalVaga();
+    await carregarVagas();
+  });
+
+  // ===== Modal: Atribuir/Trocar acolhido em uma vaga =====
+  var vagaEmEdicao = null; // { id, ocupanteId }
+
+  async function abrirModalAtribuir(vaga) {
+    var ocupante = ocupanteDaVaga(vaga);
+    vagaEmEdicao = { id: vaga.id, ocupanteId: ocupante ? ocupante.id : null };
+
+    document.getElementById('atribuir-titulo').textContent = 'Atribuir vaga — ' + vaga.identificacao;
+    var select = document.getElementById('at-acolhido');
+    select.innerHTML = '<option value="">— Deixar vaga livre —</option>';
+
+    // Traz todo mundo que não foi desligado, incluindo quem já está em outra vaga (permite trocar de leito)
+    var resultado = await db
+      .from('acolhidos')
+      .select('id, nome_completo, status, vaga_id, vagas(identificacao)')
+      .neq('status', 'desligado')
+      .order('nome_completo', { ascending: true });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar acolhidos para atribuição:', resultado.error);
+      alert('Não foi possível carregar a lista de acolhidos.');
+      return;
+    }
+
+    resultado.data.forEach(function(a) {
+      var opt = document.createElement('option');
+      opt.value = a.id;
+      var jaTemVaga = a.vaga_id && a.vaga_id !== vaga.id;
+      opt.textContent = a.nome_completo + (jaTemVaga && a.vagas ? ' (hoje em ' + a.vagas.identificacao + ')' : '');
+      select.appendChild(opt);
+    });
+
+    select.value = vagaEmEdicao.ocupanteId || '';
+    document.getElementById('modal-atribuir-overlay').classList.add('open');
+  }
+  function fecharModalAtribuir() {
+    document.getElementById('modal-atribuir-overlay').classList.remove('open');
+    vagaEmEdicao = null;
+  }
+  document.getElementById('modal-atribuir-close').addEventListener('click', fecharModalAtribuir);
+  document.getElementById('modal-atribuir-cancel').addEventListener('click', fecharModalAtribuir);
+  document.getElementById('modal-atribuir-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-atribuir-overlay')) fecharModalAtribuir();
+  });
+
+  document.getElementById('modal-atribuir-save').addEventListener('click', async function() {
+    if (!vagaEmEdicao) return;
+    var vagaId = vagaEmEdicao.id;
+    var ocupanteAnteriorId = vagaEmEdicao.ocupanteId;
+    var novoOcupanteId = document.getElementById('at-acolhido').value || null;
+
+    if (novoOcupanteId === ocupanteAnteriorId) {
+      fecharModalAtribuir();
+      return;
+    }
+
+    var botao = document.getElementById('modal-atribuir-save');
+    botao.disabled = true;
+
+    // Quem estava nessa vaga antes perde o vínculo (fica sem vaga até ser realocado)
+    if (ocupanteAnteriorId && ocupanteAnteriorId !== novoOcupanteId) {
+      var r1 = await db.from('acolhidos').update({ vaga_id: null }).eq('id', ocupanteAnteriorId);
+      if (r1.error) console.error('Erro ao remover acolhido da vaga anterior:', r1.error);
+    }
+
+    if (novoOcupanteId) {
+      // Se o novo ocupante já estava em outra vaga, libera a vaga antiga dele
+      var acolhidoInfo = await db.from('acolhidos').select('vaga_id').eq('id', novoOcupanteId).single();
+      if (!acolhidoInfo.error && acolhidoInfo.data.vaga_id && acolhidoInfo.data.vaga_id !== vagaId) {
+        var r2 = await db.from('vagas').update({ status: 'disponivel' }).eq('id', acolhidoInfo.data.vaga_id);
+        if (r2.error) console.error('Erro ao liberar vaga anterior do acolhido:', r2.error);
+      }
+
+      var r3 = await db.from('acolhidos').update({ vaga_id: vagaId }).eq('id', novoOcupanteId);
+      var r4 = await db.from('vagas').update({ status: 'ocupada' }).eq('id', vagaId);
+      if (r3.error || r4.error) {
+        console.error('Erro ao atribuir acolhido à vaga:', r3.error || r4.error);
+        alert('Não foi possível concluir a atribuição. Tente novamente.');
+        botao.disabled = false;
+        return;
+      }
+    } else {
+      var r5 = await db.from('vagas').update({ status: 'disponivel' }).eq('id', vagaId);
+      if (r5.error) {
+        console.error('Erro ao liberar a vaga:', r5.error);
+        alert('Não foi possível liberar a vaga. Tente novamente.');
+        botao.disabled = false;
+        return;
+      }
+    }
+
+    botao.disabled = false;
+    fecharModalAtribuir();
+    await carregarVagas();
+    await carregarAcolhidos();
+  });
+
+  // ===== Modal: Novo Acolhimento =====
+  var modalOverlay = document.getElementById('modal-overlay');
+
+  // Busca vagas disponíveis e membros ativos da equipe para preencher os selects do formulário
+  async function carregarOpcoesVagaEResponsavel() {
+    var selectVaga = document.getElementById('na-vaga');
+    var selectResponsavel = document.getElementById('na-responsavel');
+
+    var resultadoVagas = await db
+      .from('vagas')
+      .select('id, identificacao, unidade')
+      .eq('status', 'disponivel')
+      .order('identificacao', { ascending: true });
+
+    selectVaga.innerHTML = '<option value="">Sem vaga definida ainda</option>';
+    if (resultadoVagas.error) {
+      console.error('Erro ao carregar vagas do Supabase:', resultadoVagas.error);
+    } else {
+      resultadoVagas.data.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.identificacao + ' — ' + v.unidade;
+        selectVaga.appendChild(opt);
+      });
+      if (resultadoVagas.data.length === 0) {
+        var optSemVaga = document.createElement('option');
+        optSemVaga.value = '';
+        optSemVaga.textContent = 'Nenhuma vaga disponível no momento';
+        optSemVaga.disabled = true;
+        selectVaga.appendChild(optSemVaga);
+      }
+    }
+
+    var resultadoEquipe = await db
+      .from('equipe')
+      .select('id, nome_completo, cargo')
+      .eq('ativo', true)
+      .order('nome_completo', { ascending: true });
+
+    selectResponsavel.innerHTML = '<option value="">A definir</option>';
+    if (resultadoEquipe.error) {
+      console.error('Erro ao carregar equipe do Supabase:', resultadoEquipe.error);
+    } else {
+      resultadoEquipe.data.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.nome_completo + (m.cargo ? ' (' + (CARGO_LABEL[m.cargo] || m.cargo) + ')' : '');
+        selectResponsavel.appendChild(opt);
+      });
+      if (resultadoEquipe.data.length === 0) {
+        var optSemEquipe = document.createElement('option');
+        optSemEquipe.value = '';
+        optSemEquipe.textContent = 'Nenhum membro cadastrado na equipe ainda';
+        optSemEquipe.disabled = true;
+        selectResponsavel.appendChild(optSemEquipe);
+      }
+    }
+  }
+
+  function abrirModalNovoAcolhimento() {
+    document.getElementById('na-nome').value = '';
+    document.getElementById('na-cpf').value = '';
+    document.getElementById('na-nascimento').value = '';
+    document.getElementById('na-ultimo').value = '';
+    document.getElementById('na-qual-deficiencia').value = '';
+    document.getElementById('na-origem').value = '';
+    document.querySelector('input[name="na-deficiencia"][value="nao"]').checked = true;
+    atualizarRadioVisual();
+    document.getElementById('na-deficiencia-painel').classList.remove('open');
+    modalOverlay.classList.add('open');
+    carregarOpcoesVagaEResponsavel();
+  }
+  function fecharModalNovoAcolhimento() {
+    modalOverlay.classList.remove('open');
+  }
+  document.getElementById('btn-novo-acolhimento').addEventListener('click', abrirModalNovoAcolhimento);
+  document.getElementById('modal-close').addEventListener('click', fecharModalNovoAcolhimento);
+  document.getElementById('modal-cancel').addEventListener('click', fecharModalNovoAcolhimento);
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) fecharModalNovoAcolhimento();
+  });
+
+  function atualizarRadioVisual() {
+    document.querySelectorAll('#na-deficiencia-group .radio-option').forEach(function(opt) {
+      var input = opt.querySelector('input');
+      opt.classList.toggle('selected', input.checked);
+    });
+  }
+  document.querySelectorAll('input[name="na-deficiencia"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      atualizarRadioVisual();
+      var painel = document.getElementById('na-deficiencia-painel');
+      if (radio.value === 'sim' && radio.checked) {
+        painel.classList.add('open');
+      } else {
+        painel.classList.remove('open');
+      }
+    });
+  });
+
+  // Máscara simples de CPF
+  document.getElementById('na-cpf').addEventListener('input', function(e) {
+    var v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    e.target.value = v;
+  });
+
+  function dataBr(iso) {
+    if (!iso) return '—';
+    return formatarData(iso);
+  }
+
+  document.getElementById('modal-save').addEventListener('click', async function() {
+    var nome = document.getElementById('na-nome').value.trim();
+    var cpf = document.getElementById('na-cpf').value.trim();
+    var nascimento = document.getElementById('na-nascimento').value;
+    var temDeficiencia = document.querySelector('input[name="na-deficiencia"]:checked').value === 'sim';
+    var qual = document.getElementById('na-qual-deficiencia').value.trim();
+
+    if (!nome || !cpf || !nascimento) {
+      alert('Preencha nome, CPF e data de nascimento antes de registrar.');
+      return;
+    }
+
+    var obsPartes = ['Novo acolhimento — cadastro inicial.'];
+    var ultimo = document.getElementById('na-ultimo').value;
+    if (ultimo) obsPartes.push('Último acolhimento registrado em ' + dataBr(ultimo) + '.');
+    var origem = document.getElementById('na-origem').value.trim();
+    if (origem) obsPartes.push('Encaminhado: ' + origem + '.');
+    if (temDeficiencia) {
+      obsPartes.push('Possui deficiência' + (qual ? ' (' + qual + ')' : '') + '.');
+    } else {
+      obsPartes.push('Sem deficiência declarada.');
+    }
+
+    var botaoSalvar = document.getElementById('modal-save');
+    botaoSalvar.disabled = true;
+
+    var vagaId = document.getElementById('na-vaga').value || null;
+    var responsavelId = document.getElementById('na-responsavel').value || null;
+
+    var resultado = await db.from('acolhidos').insert({
+      nome_completo: nome,
+      status: 'em_avaliacao',
+      data_entrada: hojeISO(),
+      observacoes: obsPartes.join(' '),
+      cpf: cpf,
+      data_nascimento: nascimento,
+      data_ultimo_acolhimento: ultimo || null,
+      encaminhado_por: origem || null,
+      possui_deficiencia: temDeficiencia,
+      qual_deficiencia: temDeficiencia ? (qual || null) : null,
+      vaga_id: vagaId,
+      responsavel_tecnico_id: responsavelId,
+    }).select().single();
+
+    botaoSalvar.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar acolhimento no Supabase:', resultado.error);
+      alert('Não foi possível registrar o acolhimento no banco. Tente novamente.');
+      return;
+    }
+
+    // Se uma vaga foi escolhida, marca ela como ocupada
+    if (vagaId) {
+      var resultadoVaga = await db.from('vagas').update({ status: 'ocupada' }).eq('id', vagaId);
+      if (resultadoVaga.error) {
+        console.error('Erro ao atualizar status da vaga no Supabase:', resultadoVaga.error);
+      }
+    }
+
+    fecharModalNovoAcolhimento();
+    document.querySelector('.filter-chip[data-status="todos"]').click();
+    await carregarAcolhidos();
+  });
+
+  async function iniciarApp() {
+    await carregarEquipe();
+    await carregarVagas();
+    await carregarAcolhidos();
+  }
+  iniciarApp();
+</script>
+
+</body>
+</html>
