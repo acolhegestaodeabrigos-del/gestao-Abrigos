@@ -956,6 +956,29 @@
   </div>
 </div>
 
+<!-- Modal: Desligar acolhido -->
+<div class="modal-overlay" id="modal-desligar-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Desligar acolhido</h3>
+      <button class="drawer-close" id="modal-desligar-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="content-subtitle" id="desligar-aviso" style="margin-bottom:14px;"></p>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="desligar-motivo">Motivo do desligamento</label>
+        <textarea class="form-textarea" id="desligar-motivo" rows="3" placeholder="Ex: reinserção familiar, transferência para outro abrigo, evasão, cumprimento do prazo de acolhimento..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-desligar-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-desligar-confirm" style="background:var(--danger);">Confirmar desligamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Nova Vaga -->
 <div class="modal-overlay" id="modal-vaga-overlay">
   <div class="modal">
@@ -1159,6 +1182,8 @@
       qualDeficiencia: row.qual_deficiencia || '',
       vagaId: row.vaga_id || '',
       responsavelTecnicoId: row.responsavel_tecnico_id || '',
+      motivoDesligamento: row.motivo_desligamento || '',
+      dataSaida: row.data_saida || '',
       intercorrencias: (row.intercorrencias || []).map(function(i) {
         return {
           id: i.id, data: i.data, texto: i.texto, gravidade: i.gravidade,
@@ -1303,7 +1328,10 @@
     document.getElementById('drawer-vaga').textContent = a.vaga;
     document.getElementById('drawer-entrada').textContent = a.entrada;
     document.getElementById('drawer-responsavel').textContent = a.responsavel;
-    document.getElementById('drawer-obs').textContent = a.obs;
+    document.getElementById('drawer-obs').textContent = a.obs +
+      (a.status === 'desligado' && a.motivoDesligamento
+        ? ' Desligado em ' + formatarData(a.dataSaida) + '. Motivo: ' + a.motivoDesligamento
+        : '');
 
     document.getElementById('intercorrencia-form').classList.remove('open');
     renderTimeline();
@@ -1338,24 +1366,42 @@
     }
   });
 
-  document.getElementById('btn-desligar').addEventListener('click', async function() {
+  document.getElementById('btn-desligar').addEventListener('click', function() {
     if (!acolhidoAtual) return;
     if (acolhidoAtual.status === 'desligado') {
       alert('Este acolhido já está desligado.');
       return;
     }
+    document.getElementById('desligar-aviso').textContent =
+      'Tem certeza que deseja desligar ' + acolhidoAtual.nome + '?' +
+      (acolhidoAtual.vagaId ? ' A vaga vinculada a ele será liberada automaticamente.' : '');
+    document.getElementById('desligar-motivo').value = '';
+    document.getElementById('modal-desligar-overlay').classList.add('open');
+  });
 
-    var confirmado = confirm(
-      'Tem certeza que deseja desligar ' + acolhidoAtual.nome + '?\n\n' +
-      'Isso marca o status como "Desligado"' + (acolhidoAtual.vagaId ? ' e libera a vaga vinculada a ele.' : '.')
-    );
-    if (!confirmado) return;
+  function fecharModalDesligar() {
+    document.getElementById('modal-desligar-overlay').classList.remove('open');
+  }
+  document.getElementById('modal-desligar-close').addEventListener('click', fecharModalDesligar);
+  document.getElementById('modal-desligar-cancel').addEventListener('click', fecharModalDesligar);
+  document.getElementById('modal-desligar-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-desligar-overlay')) fecharModalDesligar();
+  });
 
-    var botao = document.getElementById('btn-desligar');
+  document.getElementById('modal-desligar-confirm').addEventListener('click', async function() {
+    if (!acolhidoAtual) return;
+    var motivo = document.getElementById('desligar-motivo').value.trim();
+
+    var botao = document.getElementById('modal-desligar-confirm');
     botao.disabled = true;
 
     var vagaAnterior = acolhidoAtual.vagaId;
-    var resultado = await db.from('acolhidos').update({ status: 'desligado', vaga_id: null }).eq('id', acolhidoAtual.id);
+    var resultado = await db.from('acolhidos').update({
+      status: 'desligado',
+      vaga_id: null,
+      data_saida: hojeISO(),
+      motivo_desligamento: motivo || null,
+    }).eq('id', acolhidoAtual.id);
 
     if (resultado.error) {
       console.error('Erro ao desligar acolhido:', resultado.error);
@@ -1370,6 +1416,7 @@
     }
 
     botao.disabled = false;
+    fecharModalDesligar();
     fecharProntuario();
     await carregarAcolhidos();
     await carregarVagas();
