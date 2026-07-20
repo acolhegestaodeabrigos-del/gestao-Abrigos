@@ -1,5 +1,7 @@
 
 
+
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -400,6 +402,9 @@
     border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit;
   }
   .btn-row-action:hover { background: rgba(46,139,135,0.18); }
+  .btn-row-action.btn-row-danger { background: var(--danger-light); color: var(--danger); }
+  .btn-row-action.btn-row-danger:hover { background: #F5D9D5; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .timeline-author { font-size: 12px; color: var(--text-muted); margin: 3px 0 0; font-style: italic; }
 
   /* Modal: Novo Acolhimento */
@@ -959,7 +964,7 @@
 <div class="modal-overlay" id="modal-vaga-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3>Nova vaga</h3>
+      <h3 id="modal-vaga-titulo">Nova vaga</h3>
       <button class="drawer-close" id="modal-vaga-close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1756,7 +1761,11 @@
         '<td>' + (v.unidade || '—') + '</td>' +
         '<td><span class="status-badge ' + (disponivel ? 'status-ativo' : 'status-avaliacao') + '">' + (disponivel ? 'Disponível' : 'Ocupada') + '</span></td>' +
         '<td>' + (ocupante ? ocupante.nome_completo : '—') + '</td>' +
-        '<td><button class="btn-row-action" data-vaga-id="' + v.id + '">' + (ocupante ? 'Trocar' : 'Atribuir') + '</button></td>';
+        '<td><div class="row-actions">' +
+          '<button class="btn-row-action" data-acao="atribuir" data-vaga-id="' + v.id + '">' + (ocupante ? 'Trocar' : 'Atribuir') + '</button>' +
+          '<button class="btn-row-action" data-acao="editar" data-vaga-id="' + v.id + '">Editar</button>' +
+          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-vaga-id="' + v.id + '">Excluir</button>' +
+        '</div></td>';
       tbody.appendChild(tr);
     });
     if (VAGAS.length === 0) {
@@ -1766,7 +1775,15 @@
       botao.addEventListener('click', function(e) {
         e.stopPropagation();
         var vaga = VAGAS.find(function(v) { return v.id === botao.dataset.vagaId; });
-        if (vaga) abrirModalAtribuir(vaga);
+        if (!vaga) return;
+        var acao = botao.dataset.acao;
+        if (acao === 'atribuir') {
+          abrirModalAtribuir(vaga);
+        } else if (acao === 'editar') {
+          abrirModalVaga(vaga);
+        } else if (acao === 'excluir') {
+          excluirVaga(vaga);
+        }
       });
     });
 
@@ -1911,16 +1928,27 @@
     await carregarVagas();
   });
 
-  function abrirModalVaga() {
-    document.getElementById('nv-identificacao').value = '';
-    document.getElementById('nv-unidade').value = '';
-    document.getElementById('nv-status').value = 'disponivel';
+  // Quando null, o modal está em modo "Nova vaga". Quando preenchido com o id
+  // de uma vaga, o modal está em modo "Editar vaga".
+  var vagaEmEdicaoId = null;
+
+  function abrirModalVaga(vagaParaEditar) {
+    vagaEmEdicaoId = vagaParaEditar ? vagaParaEditar.id : null;
+
+    document.getElementById('modal-vaga-titulo').textContent = vagaEmEdicaoId ? 'Editar vaga' : 'Nova vaga';
+    document.getElementById('modal-vaga-save').textContent = vagaEmEdicaoId ? 'Salvar alterações' : 'Salvar vaga';
+
+    document.getElementById('nv-identificacao').value = vagaParaEditar ? vagaParaEditar.identificacao : '';
+    document.getElementById('nv-unidade').value = vagaParaEditar ? (vagaParaEditar.unidade || '') : '';
+    document.getElementById('nv-status').value = vagaParaEditar ? vagaParaEditar.status : 'disponivel';
+
     document.getElementById('modal-vaga-overlay').classList.add('open');
   }
   function fecharModalVaga() {
     document.getElementById('modal-vaga-overlay').classList.remove('open');
+    vagaEmEdicaoId = null;
   }
-  document.getElementById('btn-nova-vaga').addEventListener('click', abrirModalVaga);
+  document.getElementById('btn-nova-vaga').addEventListener('click', function() { abrirModalVaga(); });
   document.getElementById('modal-vaga-close').addEventListener('click', fecharModalVaga);
   document.getElementById('modal-vaga-cancel').addEventListener('click', fecharModalVaga);
   document.getElementById('modal-vaga-overlay').addEventListener('click', function(e) {
@@ -1937,26 +1965,69 @@
       return;
     }
 
+    // Uma vaga com alguém acolhido não pode ser marcada como "Disponível"
+    // diretamente por aqui — isso deve passar por "Atribuir/Trocar" para não
+    // desalinhar o vínculo com o acolhido.
+    if (vagaEmEdicaoId) {
+      var vagaAtual = VAGAS.find(function(v) { return v.id === vagaEmEdicaoId; });
+      var ocupanteAtual = vagaAtual ? ocupanteDaVaga(vagaAtual) : null;
+      if (ocupanteAtual && status === 'disponivel') {
+        alert('Esta vaga está ocupada por ' + ocupanteAtual.nome_completo + '. Para liberá-la, use o botão "Trocar" e remova o vínculo antes de mudar o status aqui.');
+        return;
+      }
+    }
+
     var botao = document.getElementById('modal-vaga-save');
     botao.disabled = true;
 
-    var resultado = await db.from('vagas').insert({
-      identificacao: identificacao,
-      unidade: unidade,
-      status: status,
-    });
+    var resultado;
+    if (vagaEmEdicaoId) {
+      resultado = await db.from('vagas').update({
+        identificacao: identificacao,
+        unidade: unidade,
+        status: status,
+      }).eq('id', vagaEmEdicaoId);
+    } else {
+      resultado = await db.from('vagas').insert({
+        identificacao: identificacao,
+        unidade: unidade,
+        status: status,
+      });
+    }
 
     botao.disabled = false;
 
     if (resultado.error) {
-      console.error('Erro ao cadastrar vaga:', resultado.error);
-      alert('Não foi possível cadastrar a vaga. Tente novamente.');
+      console.error('Erro ao salvar vaga:', resultado.error);
+      alert('Não foi possível salvar a vaga. Tente novamente.');
       return;
     }
 
     fecharModalVaga();
     await carregarVagas();
   });
+
+  // ===== Excluir vaga =====
+  async function excluirVaga(vaga) {
+    var ocupante = ocupanteDaVaga(vaga);
+    if (ocupante) {
+      alert('Esta vaga está ocupada por ' + ocupante.nome_completo + '. Remova o vínculo (botão "Trocar" → "Deixar vaga livre") antes de excluí-la.');
+      return;
+    }
+
+    var confirmar = confirm('Tem certeza que deseja excluir a vaga "' + vaga.identificacao + '"? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('vagas').delete().eq('id', vaga.id);
+
+    if (resultado.error) {
+      console.error('Erro ao excluir vaga:', resultado.error);
+      alert('Não foi possível excluir a vaga. Verifique se ela ainda não está vinculada a algum acolhido e tente novamente.');
+      return;
+    }
+
+    await carregarVagas();
+  }
 
   // ===== Modal: Atribuir/Trocar acolhido em uma vaga =====
   var vagaEmEdicao = null; // { id, ocupanteId }
@@ -2334,3 +2405,4 @@
 
 </body>
 </html>
+
