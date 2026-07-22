@@ -285,6 +285,10 @@
   .status-ativo { background: var(--teal-light); color: #1F6B67; }
   .status-avaliacao { background: var(--amber-light); color: #8A5A12; }
   .status-desligado { background: #EEF0F2; color: var(--text-muted); }
+  .cat-roupas_masculinas { background: var(--teal-light); color: #1F6B67; }
+  .cat-roupas_femininas { background: #F3E8F5; color: #7A3E85; }
+  .cat-medicacoes { background: var(--danger-light); color: #9A3F35; }
+  .cat-outros { background: var(--amber-light); color: #8A5A12; }
   .row-arrow { color: var(--text-muted); }
 
   /* Drawer (prontuário deslizante) */
@@ -503,6 +507,10 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
         <span>Doações</span>
       </button>
+      <button class="nav-item" data-page="Indicadores">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="5" width="3" height="13" rx="1"/></svg>
+        <span>Indicadores</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -578,8 +586,8 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
             </div>
           </div>
-          <div class="kpi-value">27</div>
-          <div class="kpi-helper">R$ 8.450 arrecadados</div>
+          <div class="kpi-value" id="kpi-doacoes-mes">—</div>
+          <div class="kpi-helper" id="kpi-doacoes-helper">Itens recebidos este mês</div>
         </div>
       </div>
 
@@ -629,15 +637,15 @@
           <!-- Quick actions -->
           <div class="card">
             <p class="card-title">Ações rápidas</p>
-            <div class="quick-action">
+            <div class="quick-action" id="qa-novo-acolhimento">
               <span>Registrar novo acolhimento</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
-            <div class="quick-action">
+            <div class="quick-action" id="qa-nova-doacao">
               <span>Lançar doação recebida</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
-            <div class="quick-action">
+            <div class="quick-action" id="qa-atualizar-vaga">
               <span>Atualizar status de vaga</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
@@ -753,13 +761,111 @@
       <div class="content-header">
         <div>
           <h2 class="content-title">Doações</h2>
-          <p class="content-subtitle">Registro de doações financeiras e materiais</p>
+          <p class="content-subtitle">Controle simples do que chega no local: roupas, medicações e outros itens</p>
         </div>
-        <span class="badge-demo">Preview estático — dados de exemplo</span>
+        <button class="btn-primary" id="btn-nova-doacao">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova doação
+        </button>
       </div>
-      <div class="card" style="text-align:center; padding:48px 24px; border-style:dashed;">
-        <p style="font-weight:700; margin:0 0 6px;">Módulo em construção</p>
-        <p class="content-subtitle" style="margin:0;">Vamos desenhar esse painel em seguida.</p>
+
+      <div class="toolbar">
+        <div class="filter-chips" id="doacoes-filters">
+          <button class="filter-chip active" data-categoria="todos">Todos (<span id="count-doacoes-todos">0</span>)</button>
+          <button class="filter-chip" data-categoria="roupas_masculinas">Roupas masc. (<span id="count-doacoes-roupas_masculinas">0</span>)</button>
+          <button class="filter-chip" data-categoria="roupas_femininas">Roupas fem. (<span id="count-doacoes-roupas_femininas">0</span>)</button>
+          <button class="filter-chip" data-categoria="medicacoes">Medicações (<span id="count-doacoes-medicacoes">0</span>)</button>
+          <button class="filter-chip" data-categoria="outros">Outros (<span id="count-doacoes-outros">0</span>)</button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Descrição</th>
+              <th>Data</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="doacoes-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== PÁGINA: INDICADORES ===== -->
+    <section class="page" id="page-Indicadores">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Indicadores de Ocupação</h2>
+          <p class="content-subtitle">Acolhimentos por período de entrada (cadastro) e atribuição de vaga</p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="form-field" style="margin-bottom:0; min-width:220px;">
+          <label class="form-label" for="ind-periodo">Período</label>
+          <select class="form-select" id="ind-periodo">
+            <option value="1">Este mês (diário)</option>
+            <option value="6">Últimos 6 meses</option>
+            <option value="12" selected>Últimos 12 meses</option>
+            <option value="24">Últimos 24 meses</option>
+            <option value="all">Todo o histórico</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Acolhimentos no período</span>
+            <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="ind-kpi-total">—</div>
+          <div class="kpi-helper" id="ind-kpi-total-helper">—</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Com vaga atribuída</span>
+            <div class="kpi-icon" style="background:rgba(46,139,135,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E8B87" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="ind-kpi-com-vaga">—</div>
+          <div class="kpi-helper" id="ind-kpi-com-vaga-helper">—</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label" id="ind-kpi-media-label">Média por mês</span>
+            <div class="kpi-icon" style="background:rgba(232,163,61,0.15)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="ind-kpi-media">—</div>
+          <div class="kpi-helper" id="ind-kpi-media-helper">Acolhimentos/mês no período</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <p class="card-title">Acolhimentos por mês</p>
+        <div id="ind-grafico"></div>
+      </div>
+
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Identificação (vaga)</th>
+              <th>Data de entrada</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ind-tbody"></tbody>
+        </table>
       </div>
     </section>
     </main>
@@ -989,6 +1095,41 @@
   </div>
 </div>
 
+<!-- Modal: Nova Doação -->
+<div class="modal-overlay" id="modal-doacao-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova doação</h3>
+      <button class="drawer-close" id="modal-doacao-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="nd-categoria">Categoria</label>
+        <select class="form-select" id="nd-categoria">
+          <option value="roupas_masculinas">Roupas — Masculinas</option>
+          <option value="roupas_femininas">Roupas — Femininas</option>
+          <option value="medicacoes">Medicações</option>
+          <option value="outros">Outros</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nd-descricao">Descrição (opcional)</label>
+        <input type="text" class="form-input" id="nd-descricao" placeholder="Ex: 20 peças tam. M, caixa de dipirona..." />
+      </div>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="nd-data">Data</label>
+        <input type="date" class="form-input" id="nd-data" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-doacao-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-doacao-save">Registrar doação</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Ajustar quantidade de vagas ocupadas -->
 <div class="modal-overlay" id="modal-vagas-ocupadas-overlay">
   <div class="modal">
@@ -1148,6 +1289,7 @@
       status: row.status,
       vaga: row.vagas ? (row.vagas.identificacao + ' — ' + row.vagas.unidade) : '—',
       entrada: formatarData(row.data_entrada),
+      entradaISO: row.data_entrada || '',
       responsavel: nomeResponsavelPorId(row.responsavel_tecnico_id) || (row.responsavel_tecnico_id ? 'Responsável atribuído' : 'A definir'),
       obs: row.observacoes || '',
       // Campos brutos, usados para preencher o formulário de edição
@@ -1193,6 +1335,7 @@
     ACOLHIDOS = resultado.data.map(mapAcolhidoDoBanco);
     renderAcolhidos();
     renderAlertasDashboard();
+    renderIndicadores();
 
     var kpiAtivos = document.getElementById('kpi-acolhidos-ativos');
     if (kpiAtivos) {
@@ -1437,6 +1580,262 @@
 
     container.innerHTML = html;
   }
+
+  // ===== Indicadores de Ocupação =====
+  var MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+  function anoMesLabel(anoMes) {
+    var partes = anoMes.split('-');
+    return MESES_ABREV[parseInt(partes[1], 10) - 1] + '/' + partes[0].slice(2);
+  }
+
+  // Calcula, dia a dia, a ocupação (%) e o número de entradas/saídas no mês atual.
+  // Estimativa: considera "ocupado" quem já tinha data de entrada e ainda não tinha
+  // saído até aquele dia. Como não existe um histórico de trocas de leito, o cálculo
+  // usa os dados de cadastro/desligamento como referência.
+  function calcularOcupacaoDiariaMes() {
+    var hoje = new Date();
+    var ano = hoje.getFullYear();
+    var mes = hoje.getMonth(); // 0-indexado
+    var diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    var totalVagas = VAGAS.length || 0;
+
+    var dias = [], ocupacaoPct = [], entradasPorDia = [], saidasPorDia = [];
+
+    for (var d = 1; d <= diasNoMes; d++) {
+      var dataStr = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+
+      var presentes = ACOLHIDOS.filter(function(a) {
+        if (!a.entradaISO || a.entradaISO > dataStr) return false;
+        if (a.status === 'desligado' && a.dataSaida && a.dataSaida <= dataStr) return false;
+        return true;
+      }).length;
+
+      dias.push(d);
+      ocupacaoPct.push(totalVagas > 0 ? (presentes / totalVagas) * 100 : 0);
+      entradasPorDia.push(ACOLHIDOS.filter(function(a) { return a.entradaISO === dataStr; }).length);
+      saidasPorDia.push(ACOLHIDOS.filter(function(a) { return a.dataSaida === dataStr; }).length);
+    }
+
+    return { dias: dias, ocupacaoPct: ocupacaoPct, entradasPorDia: entradasPorDia, saidasPorDia: saidasPorDia, ano: ano, mes: mes };
+  }
+
+  // Gráfico combinado: barras de ocupação (%) + linhas de entradas e saídas por dia
+  function montarGraficoOcupacaoDiaria(dados) {
+    var dias = dados.dias, ocup = dados.ocupacaoPct, entradas = dados.entradasPorDia, saidas = dados.saidasPorDia;
+    var maxContagem = Math.max.apply(null, entradas.concat(saidas).concat([1]));
+
+    var largura = 780, altura = 190;
+    var margemEsq = 30, margemDir = 30, margemTopo = 14, margemBaixo = 22;
+    var areaLargura = largura - margemEsq - margemDir;
+    var areaAltura = altura - margemTopo - margemBaixo;
+    var passo = areaLargura / dias.length;
+    var larguraBarra = Math.max(4, Math.min(18, passo - 4));
+
+    function yPct(pct) { return margemTopo + areaAltura - (pct / 100) * areaAltura; }
+    function yContagem(v) { return margemTopo + areaAltura - (v / maxContagem) * areaAltura; }
+    function pontosLinha(valores, fnY) {
+      return valores.map(function(v, idx) {
+        var x = margemEsq + idx * passo + passo / 2;
+        return x.toFixed(1) + ',' + fnY(v).toFixed(1);
+      }).join(' ');
+    }
+
+    var svg = '<svg viewBox="0 0 ' + largura + ' ' + altura + '" style="width:100%; height:auto; display:block;">';
+
+    [0, 25, 50, 75, 100].forEach(function(marca) {
+      var y = yPct(marca);
+      svg += '<line x1="' + margemEsq + '" y1="' + y.toFixed(1) + '" x2="' + (largura - margemDir) + '" y2="' + y.toFixed(1) + '" stroke="#E3E8EC" stroke-width="1"></line>';
+      svg += '<text x="' + (margemEsq - 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="#5B6B78">' + marca + '%</text>';
+      var valorContagem = Math.round((marca / 100) * maxContagem);
+      svg += '<text x="' + (largura - margemDir + 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="start" font-size="9" fill="#5B6B78">' + valorContagem + '</text>';
+    });
+
+    dias.forEach(function(d, idx) {
+      var x = margemEsq + idx * passo + (passo - larguraBarra) / 2;
+      var y = yPct(ocup[idx]);
+      var h = (margemTopo + areaAltura) - y;
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + Math.max(0, h).toFixed(1) + '" rx="2" fill="rgba(27,58,92,0.18)"></rect>';
+    });
+
+    svg += '<polyline points="' + pontosLinha(entradas, yContagem) + '" fill="none" stroke="#E8A33D" stroke-width="2"></polyline>';
+    entradas.forEach(function(v, idx) {
+      var x = margemEsq + idx * passo + passo / 2;
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + yContagem(v).toFixed(1) + '" r="2.3" fill="#E8A33D"></circle>';
+    });
+
+    svg += '<polyline points="' + pontosLinha(saidas, yContagem) + '" fill="none" stroke="#C7554A" stroke-width="2"></polyline>';
+    saidas.forEach(function(v, idx) {
+      var x = margemEsq + idx * passo + passo / 2;
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + yContagem(v).toFixed(1) + '" r="2.3" fill="#C7554A"></circle>';
+    });
+
+    var passoRotulo = dias.length > 20 ? 2 : 1;
+    dias.forEach(function(d, idx) {
+      if (idx % passoRotulo !== 0 && idx !== dias.length - 1) return;
+      var x = margemEsq + idx * passo + passo / 2;
+      svg += '<text x="' + x.toFixed(1) + '" y="' + (altura - 6) + '" text-anchor="middle" font-size="8.5" fill="#5B6B78">' + d + '</text>';
+    });
+
+    svg += '</svg>';
+
+    var legenda =
+      '<div class="legend" style="margin-bottom:8px; flex-wrap:wrap;">' +
+        '<div class="legend-item"><span class="legend-dot" style="background:rgba(27,58,92,0.4)"></span><span>Ocupação (%)</span></div>' +
+        '<div class="legend-item"><span class="legend-dot" style="background:#E8A33D"></span><span>Entradas</span></div>' +
+        '<div class="legend-item"><span class="legend-dot" style="background:#C7554A"></span><span>Saídas</span></div>' +
+      '</div>';
+
+    return legenda + svg;
+  }
+
+  function renderIndicadoresDiario() {
+    var dados = calcularOcupacaoDiariaMes();
+    var anoMesAtual = dados.ano + '-' + String(dados.mes + 1).padStart(2, '0');
+
+    var entradasNoMes = ACOLHIDOS.filter(function(a) {
+      return a.entradaISO && a.entradaISO.slice(0, 7) === anoMesAtual;
+    });
+    var total = entradasNoMes.length;
+    var comVaga = entradasNoMes.filter(function(a) { return !!a.vagaId; }).length;
+    var mediaOcupacao = dados.ocupacaoPct.length
+      ? (dados.ocupacaoPct.reduce(function(s, v) { return s + v; }, 0) / dados.ocupacaoPct.length)
+      : 0;
+
+    document.getElementById('ind-kpi-total').textContent = total;
+    document.getElementById('ind-kpi-total-helper').textContent = 'Neste mês';
+    document.getElementById('ind-kpi-com-vaga').textContent = comVaga;
+    document.getElementById('ind-kpi-com-vaga-helper').textContent = total ? Math.round((comVaga / total) * 100) + '% do mês' : '—';
+    document.getElementById('ind-kpi-media-label').textContent = 'Ocupação média do mês';
+    document.getElementById('ind-kpi-media-helper').textContent = 'Média diária de ocupação';
+    document.getElementById('ind-kpi-media').textContent = mediaOcupacao.toFixed(0) + '%';
+
+    document.getElementById('ind-grafico').innerHTML = montarGraficoOcupacaoDiaria(dados);
+
+    var tbody = document.getElementById('ind-tbody');
+    var ordenada = entradasNoMes.slice().sort(function(a, b) { return b.entradaISO.localeCompare(a.entradaISO); });
+    tbody.innerHTML = ordenada.map(function(a) {
+      return '<tr>' +
+        '<td><div class="name-cell"><div class="name-avatar">' + iniciais(a.nome) + '</div>' + a.nome + '</div></td>' +
+        '<td>' + a.vaga + '</td>' +
+        '<td>' + a.entrada + '</td>' +
+        '<td><span class="status-badge ' + STATUS_CLASS[a.status] + '">' + STATUS_LABEL[a.status] + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!ordenada.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum acolhimento neste mês.</td></tr>';
+    }
+  }
+
+  function renderIndicadores() {
+    var selectPeriodo = document.getElementById('ind-periodo');
+    if (!selectPeriodo) return; // página ainda não presente no DOM
+
+    var periodo = selectPeriodo.value;
+
+    if (periodo === '1') {
+      renderIndicadoresDiario();
+      return;
+    }
+
+    // Modo mensal: garante que os rótulos do 3º KPI voltem ao padrão
+    document.getElementById('ind-kpi-media-label').textContent = 'Média por mês';
+    document.getElementById('ind-kpi-media-helper').textContent = 'Acolhimentos/mês no período';
+
+    var mesesQtd = periodo === 'all' ? null : parseInt(periodo, 10);
+    var hoje = new Date();
+
+    var comData = ACOLHIDOS.filter(function(a) { return !!a.entradaISO; });
+
+    var mesesArr = [];
+    var listaFiltrada;
+
+    if (mesesQtd) {
+      for (var i = mesesQtd - 1; i >= 0; i--) {
+        var d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        mesesArr.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+      }
+      var limite = new Date(hoje.getFullYear(), hoje.getMonth() - (mesesQtd - 1), 1);
+      listaFiltrada = comData.filter(function(a) {
+        return new Date(a.entradaISO + 'T00:00:00') >= limite;
+      });
+    } else {
+      listaFiltrada = comData.slice();
+      var anoMesSet = {};
+      comData.forEach(function(a) { anoMesSet[a.entradaISO.slice(0, 7)] = true; });
+      mesesArr = Object.keys(anoMesSet).sort();
+      if (!mesesArr.length) {
+        var atual = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        mesesArr = [atual.getFullYear() + '-' + String(atual.getMonth() + 1).padStart(2, '0')];
+      }
+    }
+
+    // Contagem de acolhimentos (cadastros) por mês
+    var contagem = {};
+    mesesArr.forEach(function(m) { contagem[m] = 0; });
+    listaFiltrada.forEach(function(a) {
+      var m = a.entradaISO.slice(0, 7);
+      if (contagem.hasOwnProperty(m)) contagem[m]++;
+    });
+
+    // ----- KPIs -----
+    var total = listaFiltrada.length;
+    var comVaga = listaFiltrada.filter(function(a) { return !!a.vagaId; }).length;
+    var media = mesesArr.length ? (total / mesesArr.length) : 0;
+
+    document.getElementById('ind-kpi-total').textContent = total;
+    document.getElementById('ind-kpi-total-helper').textContent =
+      periodo === 'all' ? 'Todo o histórico' : 'Nos últimos ' + mesesQtd + ' meses';
+    document.getElementById('ind-kpi-com-vaga').textContent = comVaga;
+    document.getElementById('ind-kpi-com-vaga-helper').textContent =
+      total ? Math.round((comVaga / total) * 100) + '% do período' : '—';
+    document.getElementById('ind-kpi-media').textContent = media.toFixed(1);
+
+    // ----- Gráfico de barras (SVG, sem dependências externas) -----
+    var maxValor = Math.max.apply(null, mesesArr.map(function(m) { return contagem[m]; }).concat([1]));
+    var largura = 760, altura = 170, espacoRotulo = 30;
+    var passo = (largura - 20) / mesesArr.length;
+    var larguraBarra = Math.max(10, Math.min(46, passo - 12));
+
+    var svg = '<svg viewBox="0 0 ' + largura + ' ' + (altura + espacoRotulo) + '" style="width:100%; height:auto; display:block;">';
+    mesesArr.forEach(function(m, idx) {
+      var x = 10 + idx * passo + (passo - larguraBarra) / 2;
+      var valor = contagem[m];
+      var h = valor === 0 ? 0 : (valor / maxValor) * (altura - 34);
+      var y = altura - h;
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="4" fill="#1B3A5C"></rect>';
+      if (valor > 0) {
+        svg += '<text x="' + (x + larguraBarra / 2).toFixed(1) + '" y="' + Math.max(12, y - 6).toFixed(1) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#1B3A5C">' + valor + '</text>';
+      }
+      svg += '<text x="' + (x + larguraBarra / 2).toFixed(1) + '" y="' + (altura + 18) + '" text-anchor="middle" font-size="10" fill="#5B6B78">' + anoMesLabel(m) + '</text>';
+    });
+    svg += '</svg>';
+
+    var elGrafico = document.getElementById('ind-grafico');
+    elGrafico.innerHTML = total
+      ? svg
+      : '<p class="content-subtitle" style="padding:8px 0;">Nenhum acolhimento registrado no período selecionado.</p>';
+
+    // ----- Tabela: Nome, Identificação (vaga), Data de entrada, Status -----
+    var tbody = document.getElementById('ind-tbody');
+    var ordenada = listaFiltrada.slice().sort(function(a, b) { return b.entradaISO.localeCompare(a.entradaISO); });
+    tbody.innerHTML = ordenada.map(function(a) {
+      return '<tr>' +
+        '<td><div class="name-cell"><div class="name-avatar">' + iniciais(a.nome) + '</div>' + a.nome + '</div></td>' +
+        '<td>' + a.vaga + '</td>' +
+        '<td>' + a.entrada + '</td>' +
+        '<td><span class="status-badge ' + STATUS_CLASS[a.status] + '">' + STATUS_LABEL[a.status] + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!ordenada.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum acolhimento no período selecionado.</td></tr>';
+    }
+  }
+
+  var elIndPeriodo = document.getElementById('ind-periodo');
+  if (elIndPeriodo) elIndPeriodo.addEventListener('change', renderIndicadores);
 
   // ===== Atividade recente do Dashboard =====
   // Cada linha aqui vem da tabela "atividades" no Supabase (ver instruções de criação da tabela).
@@ -2003,6 +2402,161 @@
     await carregarVagas();
   });
 
+  // ===== Doações =====
+  // Controle simples do que chega no local: categoria + descrição opcional + data.
+  var DOACOES = [];
+
+  var CATEGORIA_LABEL = {
+    roupas_masculinas: 'Roupas — Masculinas',
+    roupas_femininas: 'Roupas — Femininas',
+    medicacoes: 'Medicações',
+    outros: 'Outros',
+  };
+
+  async function carregarDoacoes() {
+    var tbody = document.getElementById('doacoes-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando doações...</td></tr>';
+    }
+
+    var resultado = await db
+      .from('doacoes')
+      .select('*')
+      .order('data', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar doações do Supabase:', resultado.error);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar as doações. Verifique se a tabela "doacoes" existe no Supabase.</td></tr>';
+      }
+      return;
+    }
+
+    DOACOES = resultado.data;
+    renderDoacoes();
+    atualizarKpiDoacoes();
+  }
+
+  function renderDoacoes() {
+    var tbody = document.getElementById('doacoes-tbody');
+    if (!tbody) return;
+
+    var filtro = document.querySelector('#doacoes-filters .filter-chip.active').dataset.categoria;
+
+    document.getElementById('count-doacoes-todos').textContent = DOACOES.length;
+    ['roupas_masculinas', 'roupas_femininas', 'medicacoes', 'outros'].forEach(function(cat) {
+      document.getElementById('count-doacoes-' + cat).textContent =
+        DOACOES.filter(function(d) { return d.categoria === cat; }).length;
+    });
+
+    var lista = filtro === 'todos' ? DOACOES : DOACOES.filter(function(d) { return d.categoria === filtro; });
+
+    tbody.innerHTML = lista.map(function(d) {
+      return '<tr>' +
+        '<td><span class="status-badge cat-' + d.categoria + '">' + (CATEGORIA_LABEL[d.categoria] || d.categoria) + '</span></td>' +
+        '<td>' + (d.descricao || '—') + '</td>' +
+        '<td>' + formatarData(d.data) + '</td>' +
+        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-doacao-id="' + d.id + '">Excluir</button></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhuma doação registrada.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var doacao = DOACOES.find(function(d) { return d.id === botao.dataset.doacaoId; });
+        if (doacao) excluirDoacao(doacao);
+      });
+    });
+  }
+
+  document.querySelectorAll('#doacoes-filters .filter-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('#doacoes-filters .filter-chip').forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderDoacoes();
+    });
+  });
+
+  function abrirModalDoacao() {
+    document.getElementById('nd-categoria').value = 'roupas_masculinas';
+    document.getElementById('nd-descricao').value = '';
+    document.getElementById('nd-data').value = hojeISO();
+    document.getElementById('modal-doacao-overlay').classList.add('open');
+  }
+  function fecharModalDoacao() {
+    document.getElementById('modal-doacao-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-nova-doacao').addEventListener('click', abrirModalDoacao);
+  document.getElementById('modal-doacao-close').addEventListener('click', fecharModalDoacao);
+  document.getElementById('modal-doacao-cancel').addEventListener('click', fecharModalDoacao);
+  document.getElementById('modal-doacao-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-doacao-overlay')) fecharModalDoacao();
+  });
+
+  document.getElementById('modal-doacao-save').addEventListener('click', async function() {
+    var categoria = document.getElementById('nd-categoria').value;
+    var descricao = document.getElementById('nd-descricao').value.trim();
+    var data = document.getElementById('nd-data').value;
+
+    if (!data) {
+      alert('Selecione a data da doação.');
+      return;
+    }
+
+    var botao = document.getElementById('modal-doacao-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('doacoes').insert({
+      categoria: categoria,
+      descricao: descricao || null,
+      data: data,
+    });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar doação no Supabase:', resultado.error);
+      alert('Não foi possível registrar a doação. Verifique se a tabela "doacoes" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    fecharModalDoacao();
+    await carregarDoacoes();
+  });
+
+  async function excluirDoacao(doacao) {
+    var confirmar = confirm('Tem certeza que deseja excluir este registro de doação? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('doacoes').delete().eq('id', doacao.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir doação:', resultado.error);
+      alert('Não foi possível excluir a doação. Tente novamente.');
+      return;
+    }
+    await carregarDoacoes();
+  }
+
+  // KPI do Dashboard: total de itens de doação recebidos no mês atual
+  function atualizarKpiDoacoes() {
+    var kpiValor = document.getElementById('kpi-doacoes-mes');
+    var kpiHelper = document.getElementById('kpi-doacoes-helper');
+    if (!kpiValor) return;
+
+    var hoje = new Date();
+    var anoMesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+    var doDMes = DOACOES.filter(function(d) { return d.data && d.data.slice(0, 7) === anoMesAtual; });
+
+    kpiValor.textContent = doDMes.length;
+    if (kpiHelper) {
+      kpiHelper.textContent = doDMes.length ? doDMes.length + ' item(ns) recebido(s) este mês' : 'Nenhum item recebido este mês';
+    }
+  }
+
   // ===== Excluir vaga =====
   async function excluirVaga(vaga) {
     var ocupante = ocupanteDaVaga(vaga);
@@ -2389,12 +2943,20 @@
     await carregarVagas();
   });
 
+  // Ações rápidas do Dashboard
+  document.getElementById('qa-novo-acolhimento').addEventListener('click', function() { abrirModalNovoAcolhimento(); });
+  document.getElementById('qa-nova-doacao').addEventListener('click', function() { abrirModalDoacao(); });
+  document.getElementById('qa-atualizar-vaga').addEventListener('click', function() {
+    document.querySelector('.nav-item[data-page="Vagas"]').click();
+  });
+
   async function iniciarApp() {
     await carregarEquipe();
     await carregarOcupacao();
     await carregarVagas();
     await carregarAcolhidos();
     await carregarAtividadesRecentes();
+    await carregarDoacoes();
   }
   iniciarApp();
 </script>
