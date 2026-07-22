@@ -285,10 +285,11 @@
   .status-ativo { background: var(--teal-light); color: #1F6B67; }
   .status-avaliacao { background: var(--amber-light); color: #8A5A12; }
   .status-desligado { background: #EEF0F2; color: var(--text-muted); }
-  .cat-roupas_masculinas { background: var(--teal-light); color: #1F6B67; }
-  .cat-roupas_femininas { background: #F3E8F5; color: #7A3E85; }
-  .cat-medicacoes { background: var(--danger-light); color: #9A3F35; }
-  .cat-outros { background: var(--amber-light); color: #8A5A12; }
+  .cat-financeira { background: var(--teal-light); color: #1F6B67; }
+  .cat-alimento { background: #F3E8F5; color: #7A3E85; }
+  .cat-higiene { background: var(--danger-light); color: #9A3F35; }
+  .cat-vestuario { background: #E4ECFB; color: #2C4E8A; }
+  .cat-outro { background: var(--amber-light); color: #8A5A12; }
   .row-arrow { color: var(--text-muted); }
 
   /* Drawer (prontuário deslizante) */
@@ -761,7 +762,7 @@
       <div class="content-header">
         <div>
           <h2 class="content-title">Doações</h2>
-          <p class="content-subtitle">Controle simples do que chega no local: roupas, medicações e outros itens</p>
+          <p class="content-subtitle">Controle simples do que chega no local: financeiro, alimentos, higiene, vestuário e outros itens</p>
         </div>
         <button class="btn-primary" id="btn-nova-doacao">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -772,10 +773,11 @@
       <div class="toolbar">
         <div class="filter-chips" id="doacoes-filters">
           <button class="filter-chip active" data-categoria="todos">Todos (<span id="count-doacoes-todos">0</span>)</button>
-          <button class="filter-chip" data-categoria="roupas_masculinas">Roupas masc. (<span id="count-doacoes-roupas_masculinas">0</span>)</button>
-          <button class="filter-chip" data-categoria="roupas_femininas">Roupas fem. (<span id="count-doacoes-roupas_femininas">0</span>)</button>
-          <button class="filter-chip" data-categoria="medicacoes">Medicações (<span id="count-doacoes-medicacoes">0</span>)</button>
-          <button class="filter-chip" data-categoria="outros">Outros (<span id="count-doacoes-outros">0</span>)</button>
+          <button class="filter-chip" data-categoria="financeira">Financeira (<span id="count-doacoes-financeira">0</span>)</button>
+          <button class="filter-chip" data-categoria="alimento">Alimento (<span id="count-doacoes-alimento">0</span>)</button>
+          <button class="filter-chip" data-categoria="higiene">Higiene (<span id="count-doacoes-higiene">0</span>)</button>
+          <button class="filter-chip" data-categoria="vestuario">Vestuário (<span id="count-doacoes-vestuario">0</span>)</button>
+          <button class="filter-chip" data-categoria="outro">Outro (<span id="count-doacoes-outro">0</span>)</button>
         </div>
       </div>
 
@@ -1120,12 +1122,13 @@
     </div>
     <div class="modal-body">
       <div class="form-field">
-        <label class="form-label" for="nd-categoria">Categoria</label>
-        <select class="form-select" id="nd-categoria">
-          <option value="roupas_masculinas">Roupas — Masculinas</option>
-          <option value="roupas_femininas">Roupas — Femininas</option>
-          <option value="medicacoes">Medicações</option>
-          <option value="outros">Outros</option>
+        <label class="form-label" for="nd-tipo">Categoria</label>
+        <select class="form-select" id="nd-tipo">
+          <option value="financeira">Financeira</option>
+          <option value="alimento">Alimento</option>
+          <option value="higiene">Higiene</option>
+          <option value="vestuario">Vestuário</option>
+          <option value="outro">Outro</option>
         </select>
       </div>
       <div class="form-field">
@@ -2516,10 +2519,11 @@
   var DOACOES = [];
 
   var CATEGORIA_LABEL = {
-    roupas_masculinas: 'Roupas — Masculinas',
-    roupas_femininas: 'Roupas — Femininas',
-    medicacoes: 'Medicações',
-    outros: 'Outros',
+    financeira: 'Financeira',
+    alimento: 'Alimento',
+    higiene: 'Higiene',
+    vestuario: 'Vestuário',
+    outro: 'Outro',
   };
 
   async function carregarDoacoes() {
@@ -2531,7 +2535,7 @@
     var resultado = await db
       .from('doacoes')
       .select('*')
-      .order('data', { ascending: false });
+      .order('data_recebimento', { ascending: false });
 
     if (resultado.error) {
       console.error('Erro ao carregar doações do Supabase:', resultado.error);
@@ -2553,18 +2557,18 @@
     var filtro = document.querySelector('#doacoes-filters .filter-chip.active').dataset.categoria;
 
     document.getElementById('count-doacoes-todos').textContent = DOACOES.length;
-    ['roupas_masculinas', 'roupas_femininas', 'medicacoes', 'outros'].forEach(function(cat) {
+    ['financeira', 'alimento', 'higiene', 'vestuario', 'outro'].forEach(function(cat) {
       document.getElementById('count-doacoes-' + cat).textContent =
-        DOACOES.filter(function(d) { return d.categoria === cat; }).length;
+        DOACOES.filter(function(d) { return d.tipo === cat; }).length;
     });
 
-    var lista = filtro === 'todos' ? DOACOES : DOACOES.filter(function(d) { return d.categoria === filtro; });
+    var lista = filtro === 'todos' ? DOACOES : DOACOES.filter(function(d) { return d.tipo === filtro; });
 
     tbody.innerHTML = lista.map(function(d) {
       return '<tr>' +
-        '<td><span class="status-badge cat-' + d.categoria + '">' + (CATEGORIA_LABEL[d.categoria] || d.categoria) + '</span></td>' +
+        '<td><span class="status-badge cat-' + d.tipo + '">' + (CATEGORIA_LABEL[d.tipo] || d.tipo) + '</span></td>' +
         '<td>' + (d.descricao || '—') + '</td>' +
-        '<td>' + formatarData(d.data) + '</td>' +
+        '<td>' + formatarData(d.data_recebimento) + '</td>' +
         '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-doacao-id="' + d.id + '">Excluir</button></td>' +
         '</tr>';
     }).join('');
@@ -2591,7 +2595,7 @@
   });
 
   function abrirModalDoacao() {
-    document.getElementById('nd-categoria').value = 'roupas_masculinas';
+    document.getElementById('nd-tipo').value = 'financeira';
     document.getElementById('nd-descricao').value = '';
     document.getElementById('nd-data').value = hojeISO();
     document.getElementById('modal-doacao-overlay').classList.add('open');
@@ -2607,7 +2611,7 @@
   });
 
   document.getElementById('modal-doacao-save').addEventListener('click', async function() {
-    var categoria = document.getElementById('nd-categoria').value;
+    var tipo = document.getElementById('nd-tipo').value;
     var descricao = document.getElementById('nd-descricao').value.trim();
     var data = document.getElementById('nd-data').value;
 
@@ -2620,9 +2624,9 @@
     botao.disabled = true;
 
     var resultado = await db.from('doacoes').insert({
-      categoria: categoria,
+      tipo: tipo,
       descricao: descricao || null,
-      data: data,
+      data_recebimento: data,
     });
 
     botao.disabled = false;
@@ -2658,7 +2662,7 @@
 
     var hoje = new Date();
     var anoMesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
-    var doDMes = DOACOES.filter(function(d) { return d.data && d.data.slice(0, 7) === anoMesAtual; });
+    var doDMes = DOACOES.filter(function(d) { return d.data_recebimento && d.data_recebimento.slice(0, 7) === anoMesAtual; });
 
     kpiValor.textContent = doDMes.length;
     if (kpiHelper) {
