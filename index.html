@@ -854,6 +854,11 @@
         <div id="ind-grafico"></div>
       </div>
 
+      <div class="card" style="margin-bottom:20px;">
+        <p class="card-title">Motivos de desligamento</p>
+        <div id="ind-grafico-desligamento"></div>
+      </div>
+
       <div class="card table-card">
         <table class="data-table">
           <thead>
@@ -1050,9 +1055,18 @@
     </div>
     <div class="modal-body">
       <p class="content-subtitle" id="desligar-aviso" style="margin-bottom:14px;"></p>
+      <div class="form-field">
+        <label class="form-label" for="desligar-motivo-select">Motivo do desligamento</label>
+        <select class="form-select" id="desligar-motivo-select">
+          <option value="">Selecione...</option>
+          <option value="Descumprimento de regras">Descumprimento de regras</option>
+          <option value="Superação de vida">Superação de vida</option>
+          <option value="Mudança de casa">Mudança de casa</option>
+        </select>
+      </div>
       <div class="form-field" style="margin-bottom:0;">
-        <label class="form-label" for="desligar-motivo">Motivo do desligamento</label>
-        <textarea class="form-textarea" id="desligar-motivo" rows="3" placeholder="Ex: reinserção familiar, transferência para outro abrigo, evasão, cumprimento do prazo de acolhimento..."></textarea>
+        <label class="form-label" for="desligar-motivo">Observação (opcional)</label>
+        <textarea class="form-textarea" id="desligar-motivo" rows="3" placeholder="Detalhes adicionais sobre o desligamento..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -1302,6 +1316,7 @@
       vagaId: row.vaga_id || '',
       responsavelTecnicoId: row.responsavel_tecnico_id || '',
       motivoDesligamento: row.motivo_desligamento || '',
+      observacaoDesligamento: row.observacao_desligamento || '',
       dataSaida: row.data_saida || '',
       intercorrencias: (row.intercorrencias || []).map(function(i) {
         return {
@@ -1450,7 +1465,8 @@
     document.getElementById('drawer-responsavel').textContent = a.responsavel;
     document.getElementById('drawer-obs').textContent = a.obs +
       (a.status === 'desligado' && a.motivoDesligamento
-        ? ' Desligado em ' + formatarData(a.dataSaida) + '. Motivo: ' + a.motivoDesligamento
+        ? ' Desligado em ' + formatarData(a.dataSaida) + '. Motivo: ' + a.motivoDesligamento +
+          (a.observacaoDesligamento ? '. Obs: ' + a.observacaoDesligamento : '')
         : '');
 
     document.getElementById('intercorrencia-form').classList.remove('open');
@@ -1495,6 +1511,7 @@
     document.getElementById('desligar-aviso').textContent =
       'Tem certeza que deseja desligar ' + acolhidoAtual.nome + '?' +
       (acolhidoAtual.vagaId ? ' A vaga vinculada a ele será liberada automaticamente.' : '');
+    document.getElementById('desligar-motivo-select').value = '';
     document.getElementById('desligar-motivo').value = '';
     document.getElementById('modal-desligar-overlay').classList.add('open');
   });
@@ -1510,17 +1527,27 @@
 
   document.getElementById('modal-desligar-confirm').addEventListener('click', async function() {
     if (!acolhidoAtual) return;
-    var motivo = document.getElementById('desligar-motivo').value.trim();
+    var motivoStatus = document.getElementById('desligar-motivo-select').value;
+    var observacao = document.getElementById('desligar-motivo').value.trim();
+
+    if (!motivoStatus) {
+      alert('Selecione o motivo do desligamento.');
+      return;
+    }
 
     var botao = document.getElementById('modal-desligar-confirm');
     botao.disabled = true;
 
     var vagaAnterior = acolhidoAtual.vagaId;
+    var hoje = hojeISO();
     var resultado = await db.from('acolhidos').update({
       status: 'desligado',
+      ativo: false,
       vaga_id: null,
-      data_saida: hojeISO(),
-      motivo_desligamento: motivo || null,
+      data_saida: hoje,
+      data_desligamento: hoje,
+      motivo_desligamento: motivoStatus,
+      observacao_desligamento: observacao || null,
     }).eq('id', acolhidoAtual.id);
 
     if (resultado.error) {
@@ -1535,7 +1562,7 @@
       if (resultadoVaga.error) console.error('Erro ao liberar vaga do acolhido desligado:', resultadoVaga.error);
     }
 
-    registrarAtividade('desligamento', 'Desligamento — ' + acolhidoAtual.nome + (motivo ? '. Motivo: ' + motivo : ''));
+    registrarAtividade('desligamento', 'Desligamento — ' + acolhidoAtual.nome + '. Motivo: ' + motivoStatus + (observacao ? '. Obs: ' + observacao : ''));
 
     botao.disabled = false;
     fecharModalDesligar();
@@ -1689,6 +1716,75 @@
     return legenda + svg;
   }
 
+  // Gráfico de rosca (donut, SVG) com a distribuição dos motivos de desligamento
+  var MOTIVOS_DESLIGAMENTO_CORES = {
+    'Descumprimento de regras': '#C7554A',
+    'Superação de vida': '#2E8B87',
+    'Mudança de casa': '#E8A33D',
+    'Outro / não informado': '#8B98A5'
+  };
+
+  function contarMotivosDesligamento(lista) {
+    var contagem = { 'Descumprimento de regras': 0, 'Superação de vida': 0, 'Mudança de casa': 0, 'Outro / não informado': 0 };
+    lista.forEach(function(a) {
+      var motivo = a.motivoDesligamento && contagem.hasOwnProperty(a.motivoDesligamento)
+        ? a.motivoDesligamento
+        : 'Outro / não informado';
+      contagem[motivo]++;
+    });
+    return Object.keys(contagem).map(function(label) {
+      return { label: label, valor: contagem[label], cor: MOTIVOS_DESLIGAMENTO_CORES[label] };
+    });
+  }
+
+  function montarGraficoMotivosDesligamento(dados) {
+    var total = dados.reduce(function(s, d) { return s + d.valor; }, 0);
+    var r = 70, cx = 90, cy = 90, espessura = 24;
+    var circunferencia = 2 * Math.PI * r;
+    var offset = 0;
+
+    var svg = '<svg viewBox="0 0 180 180" style="width:180px; height:180px; display:block; flex-shrink:0;">';
+    if (total === 0) {
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#EEF0F2" stroke-width="' + espessura + '"></circle>';
+    } else {
+      dados.forEach(function(d) {
+        if (!d.valor) return;
+        var frac = d.valor / total;
+        var segLen = frac * circunferencia;
+        svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + d.cor + '" stroke-width="' + espessura +
+          '" stroke-dasharray="' + segLen.toFixed(1) + ' ' + (circunferencia - segLen).toFixed(1) +
+          '" stroke-dashoffset="' + (-offset).toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"></circle>';
+        offset += segLen;
+      });
+    }
+    svg += '<text x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle" font-size="22" font-weight="700" fill="#1B3A5C">' + total + '</text>';
+    svg += '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" font-size="10" fill="#5B6B78">desligamento' + (total === 1 ? '' : 's') + '</text>';
+    svg += '</svg>';
+
+    var legenda = '<div style="display:flex; flex-direction:column; gap:10px; min-width:200px;">' +
+      dados.map(function(d) {
+        var pct = total ? Math.round((d.valor / total) * 100) : 0;
+        return '<div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">' +
+          '<span style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dark, #1B3A5C);"><span class="legend-dot" style="background:' + d.cor + '"></span>' + d.label + '</span>' +
+          '<span style="font-size:13px; font-weight:600; color:#1B3A5C; white-space:nowrap;">' + d.valor + ' <span style="font-weight:400; color:#5B6B78;">(' + pct + '%)</span></span>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    if (total === 0) {
+      return '<div style="display:flex; align-items:center; gap:32px; flex-wrap:wrap;">' + svg +
+        '<p class="content-subtitle" style="margin:0;">Nenhum desligamento no período selecionado.</p></div>';
+    }
+
+    return '<div style="display:flex; align-items:center; gap:32px; flex-wrap:wrap;">' + svg + legenda + '</div>';
+  }
+
+  function renderMotivosDesligamento(desligadosNoPeriodo) {
+    var el = document.getElementById('ind-grafico-desligamento');
+    if (!el) return;
+    el.innerHTML = montarGraficoMotivosDesligamento(contarMotivosDesligamento(desligadosNoPeriodo));
+  }
+
   function renderIndicadoresDiario() {
     var dados = calcularOcupacaoDiariaMes();
     var anoMesAtual = dados.ano + '-' + String(dados.mes + 1).padStart(2, '0');
@@ -1711,6 +1807,11 @@
     document.getElementById('ind-kpi-media').textContent = mediaOcupacao.toFixed(0) + '%';
 
     document.getElementById('ind-grafico').innerHTML = montarGraficoOcupacaoDiaria(dados);
+
+    var desligadosNoMes = ACOLHIDOS.filter(function(a) {
+      return a.status === 'desligado' && a.dataSaida && a.dataSaida.slice(0, 7) === anoMesAtual;
+    });
+    renderMotivosDesligamento(desligadosNoMes);
 
     var tbody = document.getElementById('ind-tbody');
     var ordenada = entradasNoMes.slice().sort(function(a, b) { return b.entradaISO.localeCompare(a.entradaISO); });
@@ -1816,6 +1917,14 @@
     elGrafico.innerHTML = total
       ? svg
       : '<p class="content-subtitle" style="padding:8px 0;">Nenhum acolhimento registrado no período selecionado.</p>';
+
+    var desligadosNoPeriodo = ACOLHIDOS.filter(function(a) {
+      if (a.status !== 'desligado') return false;
+      if (!mesesQtd) return true; // "Todo o histórico"
+      if (!a.dataSaida) return false;
+      return new Date(a.dataSaida + 'T00:00:00') >= limite;
+    });
+    renderMotivosDesligamento(desligadosNoPeriodo);
 
     // ----- Tabela: Nome, Identificação (vaga), Data de entrada, Status -----
     var tbody = document.getElementById('ind-tbody');
