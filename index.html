@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -175,6 +176,34 @@
   }
   .quick-action:last-child { margin-bottom: 0; }
   .quick-action:hover { background: var(--bg); }
+
+  /* Tela de login */
+  .login-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    padding: 20px;
+  }
+  .login-card {
+    width: 100%; max-width: 380px; background: var(--surface);
+    border-radius: 16px; padding: 36px 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .login-logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .login-logo-box {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 17px; color: #fff; flex-shrink: 0;
+  }
+  .login-title { font-weight: 800; font-size: 17px; margin: 0; color: var(--navy); }
+  .login-subtitle { font-size: 12px; color: var(--text-muted); margin: 0; }
+  .login-form .form-field { margin-bottom: 16px; }
+  .login-erro {
+    background: var(--danger-light); color: var(--danger); border: 1px solid #F0CFC9;
+    border-radius: 8px; padding: 10px 12px; font-size: 12.5px; font-weight: 600;
+    margin: -4px 0 16px;
+  }
+  .login-submit { width: 100%; justify-content: center; }
+  .login-hint { font-size: 12px; color: var(--text-muted); margin: 16px 0 0; text-align: center; }
 
   @media (max-width: 980px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -472,7 +501,32 @@
 </head>
 <body>
 
-<div class="app">
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo-row">
+      <div class="login-logo-box">A</div>
+      <div>
+        <p class="login-title">Acolhe</p>
+        <p class="login-subtitle">Gestão de Abrigos</p>
+      </div>
+    </div>
+    <form class="login-form" id="login-form">
+      <div class="form-field">
+        <label class="form-label" for="login-email">Email</label>
+        <input type="email" class="form-input" id="login-email" autocomplete="username" required />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="login-senha">Senha</label>
+        <input type="password" class="form-input" id="login-senha" autocomplete="current-password" required />
+      </div>
+      <p class="login-erro" id="login-erro" style="display:none;"></p>
+      <button type="submit" class="btn-save login-submit" id="login-submit">Entrar</button>
+    </form>
+    <p class="login-hint">Acesso restrito. Fale com o administrador do sistema caso ainda não tenha uma conta.</p>
+  </div>
+</div>
+
+<div class="app" id="app-root" style="display:none;">
   <!-- Overlay usado quando a sidebar vira gaveta no mobile -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -512,15 +566,22 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="5" width="3" height="13" rx="1"/></svg>
         <span>Indicadores</span>
       </button>
+      <button class="nav-item" id="nav-gerenciar-logins" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 1a4 4 0 0 1 4 4v4H8V5a4 4 0 0 1 4-4z"/><rect x="4" y="9" width="16" height="12" rx="2"/><circle cx="12" cy="15" r="1.5"/></svg>
+        <span>Gerenciar Logins</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="avatar">EQ</div>
+        <div class="avatar" id="sidebar-avatar">EQ</div>
         <div>
-          <p class="user-name">Equipe Técnica</p>
-          <p class="user-role">Casa de Acolhida</p>
+          <p class="user-name" id="sidebar-user-name">Equipe Técnica</p>
+          <p class="user-role" id="sidebar-user-role">Casa de Acolhida</p>
         </div>
+        <button class="icon-btn" id="btn-logout" title="Sair" style="margin-left:auto;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -748,7 +809,11 @@
             <tr>
               <th>Nome</th>
               <th>Cargo</th>
+              <th>Escala</th>
+              <th>Turno</th>
+              <th>Aniversário</th>
               <th>Status</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="equipe-tbody"></tbody>
@@ -1199,7 +1264,7 @@
 <div class="modal-overlay" id="modal-membro-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3>Novo membro da equipe</h3>
+      <h3 id="modal-membro-titulo">Novo membro da equipe</h3>
       <button class="drawer-close" id="modal-membro-close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1220,6 +1285,29 @@
           <option value="outro">Outro</option>
         </select>
       </div>
+      <div class="form-field">
+        <label class="form-label" for="nm-nascimento">Data de aniversário</label>
+        <input type="date" class="form-input" id="nm-nascimento" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nm-escala">Escala</label>
+        <select class="form-select" id="nm-escala">
+          <option value="12x36">12x36</option>
+          <option value="6x1">6x1</option>
+          <option value="5x2">5x2</option>
+          <option value="plantao">Plantão</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nm-turno">Turno</label>
+        <select class="form-select" id="nm-turno">
+          <option value="manha">Manhã</option>
+          <option value="tarde">Tarde</option>
+          <option value="noite">Noite</option>
+          <option value="integral">Integral</option>
+        </select>
+      </div>
       <label class="radio-option" style="cursor:pointer; display:inline-flex; margin-top:2px;">
         <input type="checkbox" id="nm-ativo" checked style="accent-color:var(--navy); margin-right:6px;" /> Membro ativo (disponível para ser atribuído como responsável técnico)
       </label>
@@ -1227,6 +1315,52 @@
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-membro-cancel">Cancelar</button>
       <button class="btn-save" id="modal-membro-save">Salvar membro</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-logins-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3>Gerenciar Logins</h3>
+      <button class="drawer-close" id="modal-logins-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="logins-lista" style="margin-bottom:20px;">
+        <p class="content-subtitle" style="margin:0 0 10px;">Carregando usuários...</p>
+      </div>
+
+      <div class="divider" style="margin:0 0 18px;"></div>
+
+      <h4 style="margin:0 0 12px; font-size:14px;">Cadastrar novo login</h4>
+
+      <div id="logins-erro" style="display:none; background:var(--danger-light); color:var(--danger); border:1px solid #F0CFC9; border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:14px;"></div>
+
+      <div class="form-field">
+        <label class="form-label" for="log-nome">Nome completo</label>
+        <input type="text" class="form-input" id="log-nome" placeholder="Nome de quem vai acessar o sistema" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="log-email">Email</label>
+        <input type="email" class="form-input" id="log-email" placeholder="email@exemplo.com" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="log-senha">Senha</label>
+        <input type="password" class="form-input" id="log-senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="log-role">Tipo de acesso</label>
+        <select class="form-select" id="log-role">
+          <option value="user">Usuário normal</option>
+          <option value="admin">Administrador(a)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-logins-cancel">Fechar</button>
+      <button class="btn-save" id="modal-logins-save">Cadastrar login</button>
     </div>
   </div>
 </div>
@@ -1244,9 +1378,9 @@
     sidebarOverlayEl.classList.remove('open');
   }
 
-  document.querySelectorAll('.nav-item').forEach(function(btn) {
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.nav-item[data-page]').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       document.getElementById('page-title').textContent = btn.dataset.page;
 
@@ -1278,6 +1412,13 @@
   var SUPABASE_URL = 'https://idtnkbhrliubdtrjoptl.supabase.co';
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkdG5rYmhybGl1YmR0cmpvcHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzODkwOTEsImV4cCI6MjA5OTk2NTA5MX0.aRB0y8cby_F1tFRkX_FnutuZrjmklGBSJm2jkXBEGlE';
   var db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Client auxiliar, usado apenas para criar novos logins (tela "Gerenciar Logins").
+  // Ele guarda a sessão em uma chave de storage diferente do client principal,
+  // para que criar um novo usuário NÃO troque a sessão do administrador logado.
+  var dbNovoLogin = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storageKey: 'sb-novo-login-auxiliar', persistSession: false }
+  });
 
   // Dados carregados do banco (populados por carregarAcolhidos)
   var ACOLHIDOS = [];
@@ -1475,6 +1616,9 @@
     document.getElementById('intercorrencia-form').classList.remove('open');
     renderTimeline();
 
+    var btnDesligar = document.getElementById('btn-desligar');
+    btnDesligar.textContent = a.status === 'desligado' ? 'Religar acolhido' : 'Desligar acolhido';
+
     document.getElementById('drawer-prontuario').classList.add('open');
     document.getElementById('drawer-overlay').classList.add('open');
   }
@@ -1490,6 +1634,7 @@
     var statusAnterior = acolhidoAtual.status;
     acolhidoAtual.status = novoStatus;
     aplicarClasseStatus(e.target, novoStatus);
+    document.getElementById('btn-desligar').textContent = novoStatus === 'desligado' ? 'Religar acolhido' : 'Desligar acolhido';
     renderAcolhidos();
     renderAlertasDashboard();
 
@@ -1500,6 +1645,7 @@
       acolhidoAtual.status = statusAnterior;
       e.target.value = statusAnterior;
       aplicarClasseStatus(e.target, statusAnterior);
+      document.getElementById('btn-desligar').textContent = statusAnterior === 'desligado' ? 'Religar acolhido' : 'Desligar acolhido';
       renderAcolhidos();
       renderAlertasDashboard();
     }
@@ -1508,7 +1654,7 @@
   document.getElementById('btn-desligar').addEventListener('click', function() {
     if (!acolhidoAtual) return;
     if (acolhidoAtual.status === 'desligado') {
-      alert('Este acolhido já está desligado.');
+      religarAcolhido();
       return;
     }
     document.getElementById('desligar-aviso').textContent =
@@ -1573,6 +1719,33 @@
     await carregarAcolhidos();
     await carregarVagas();
   });
+
+  async function religarAcolhido() {
+    if (!acolhidoAtual) return;
+    var confirmar = confirm('Tem certeza que deseja religar ' + acolhidoAtual.nome + '? Ele voltará como "Em avaliação" para que uma vaga seja atribuída novamente.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('acolhidos').update({
+      status: 'em_avaliacao',
+      ativo: true,
+      data_saida: null,
+      data_desligamento: null,
+      motivo_desligamento: null,
+      observacao_desligamento: null,
+    }).eq('id', acolhidoAtual.id);
+
+    if (resultado.error) {
+      console.error('Erro ao religar acolhido:', resultado.error);
+      alert('Não foi possível religar o acolhido. Tente novamente.');
+      return;
+    }
+
+    registrarAtividade('religamento', 'Religamento — ' + acolhidoAtual.nome);
+
+    fecharProntuario();
+    await carregarAcolhidos();
+    await carregarVagas();
+  }
 
   // ===== Alertas dinâmicos do Dashboard =====
   function renderAlertasDashboard() {
@@ -1956,6 +2129,7 @@
     leito_liberado:  { letra: 'L', bg: 'rgba(27,58,92,0.1)',    cor: '#1B3A5C', label: 'Vaga' },
     troca_quarto:    { letra: 'T', bg: 'rgba(232,163,61,0.15)', cor: '#E8A33D', label: 'Troca de quarto' },
     desligamento:    { letra: 'D', bg: 'rgba(199,85,74,0.12)',  cor: '#C7554A', label: 'Desligamento' },
+    religamento:     { letra: 'R', bg: 'rgba(46,139,135,0.12)', cor: '#2E8B87', label: 'Religamento' },
   };
 
   // Converte um timestamp ISO em texto relativo ("há 2h", "ontem", "há 3 dias"...)
@@ -2113,21 +2287,36 @@
     outro: 'Outro',
   };
 
+  var ESCALA_LABEL = {
+    '12x36': '12x36',
+    '6x1': '6x1',
+    '5x2': '5x2',
+    plantao: 'Plantão',
+    outro: 'Outro',
+  };
+
+  var TURNO_LABEL = {
+    manha: 'Manhã',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    integral: 'Integral',
+  };
+
   async function carregarEquipe() {
     var tbody = document.getElementById('equipe-tbody');
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando equipe...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando equipe...</td></tr>';
     }
 
     var resultado = await db
       .from('equipe')
-      .select('id, nome_completo, cargo, ativo')
+      .select('id, nome_completo, cargo, data_nascimento, escala, turno, ativo')
       .order('nome_completo', { ascending: true });
 
     if (resultado.error) {
       console.error('Erro ao carregar equipe do Supabase:', resultado.error);
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar a equipe.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar a equipe.</td></tr>';
       }
       return;
     }
@@ -2150,11 +2339,18 @@
       tr.innerHTML =
         '<td>' + m.nome_completo + '</td>' +
         '<td>' + (CARGO_LABEL[m.cargo] || m.cargo || '—') + '</td>' +
-        '<td><span class="status-badge ' + (m.ativo ? 'status-ativo' : 'status-desligado') + '" data-id="' + m.id + '" data-ativo="' + m.ativo + '" style="cursor:pointer;">' + (m.ativo ? 'Ativo' : 'Inativo') + '</span></td>';
+        '<td>' + (ESCALA_LABEL[m.escala] || m.escala || '—') + '</td>' +
+        '<td>' + (TURNO_LABEL[m.turno] || m.turno || '—') + '</td>' +
+        '<td>' + (m.data_nascimento ? formatarData(m.data_nascimento) : '—') + '</td>' +
+        '<td><span class="status-badge ' + (m.ativo ? 'status-ativo' : 'status-desligado') + '" data-id="' + m.id + '" data-ativo="' + m.ativo + '" style="cursor:pointer;">' + (m.ativo ? 'Ativo' : 'Inativo') + '</span></td>' +
+        '<td><div class="row-actions">' +
+          '<button class="btn-row-action" data-acao="editar" data-membro-id="' + m.id + '">Editar</button>' +
+          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-membro-id="' + m.id + '">Excluir</button>' +
+        '</div></td>';
       tbody.appendChild(tr);
     });
     if (EQUIPE.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum membro cadastrado ainda.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum membro cadastrado ainda.</td></tr>';
     }
     tbody.querySelectorAll('.status-badge').forEach(function(badge) {
       badge.addEventListener('click', async function(e) {
@@ -2171,18 +2367,69 @@
         await carregarAcolhidos();
       });
     });
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var membro = EQUIPE.find(function(m) { return m.id === botao.dataset.membroId; });
+        if (!membro) return;
+        var acao = botao.dataset.acao;
+        if (acao === 'editar') {
+          abrirModalMembro(membro);
+        } else if (acao === 'excluir') {
+          excluirMembro(membro);
+        }
+      });
+    });
   }
 
-  function abrirModalMembro() {
-    document.getElementById('nm-nome').value = '';
-    document.getElementById('nm-cargo').value = 'assistente_social';
-    document.getElementById('nm-ativo').checked = true;
+  async function excluirMembro(membro) {
+    var responsavelPor = ACOLHIDOS.filter(function(a) {
+      return a.responsavelTecnicoId === membro.id && a.status !== 'desligado';
+    });
+    if (responsavelPor.length > 0) {
+      alert('Este membro é responsável técnico por ' + responsavelPor.length + ' acolhido(s) ativo(s). Troque o responsável técnico desses cadastros antes de excluí-lo.');
+      return;
+    }
+
+    var confirmar = confirm('Tem certeza que deseja excluir "' + membro.nome_completo + '" da equipe? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('equipe').delete().eq('id', membro.id).select();
+
+    if (resultado.error) {
+      console.error('Erro ao excluir membro da equipe:', resultado.error);
+      alert('Não foi possível excluir o membro. Tente novamente.');
+      return;
+    }
+
+    if (!resultado.data || resultado.data.length === 0) {
+      console.error('Exclusão não afetou nenhuma linha (provável bloqueio de RLS na tabela equipe).');
+      alert('O sistema não conseguiu excluir este membro. Isso costuma acontecer por falta de permissão (RLS) na tabela "equipe" no Supabase para exclusões.');
+      return;
+    }
+
+    await carregarEquipe();
+  }
+
+  var idMembroEmEdicao = null; // null = cadastrando novo; caso contrário, guarda o id do membro em edição
+
+  function abrirModalMembro(membroParaEditar) {
+    idMembroEmEdicao = membroParaEditar ? membroParaEditar.id : null;
+    document.getElementById('modal-membro-titulo').textContent = membroParaEditar ? 'Editar membro da equipe' : 'Novo membro da equipe';
+    document.getElementById('modal-membro-save').textContent = membroParaEditar ? 'Salvar alterações' : 'Salvar membro';
+    document.getElementById('nm-nome').value = membroParaEditar ? membroParaEditar.nome_completo : '';
+    document.getElementById('nm-cargo').value = membroParaEditar ? membroParaEditar.cargo : 'assistente_social';
+    document.getElementById('nm-nascimento').value = membroParaEditar ? (membroParaEditar.data_nascimento || '') : '';
+    document.getElementById('nm-escala').value = membroParaEditar ? (membroParaEditar.escala || '12x36') : '12x36';
+    document.getElementById('nm-turno').value = membroParaEditar ? (membroParaEditar.turno || 'manha') : 'manha';
+    document.getElementById('nm-ativo').checked = membroParaEditar ? !!membroParaEditar.ativo : true;
     document.getElementById('modal-membro-overlay').classList.add('open');
   }
   function fecharModalMembro() {
     document.getElementById('modal-membro-overlay').classList.remove('open');
+    idMembroEmEdicao = null;
   }
-  document.getElementById('btn-novo-membro').addEventListener('click', abrirModalMembro);
+  document.getElementById('btn-novo-membro').addEventListener('click', function() { abrirModalMembro(); });
   document.getElementById('modal-membro-close').addEventListener('click', fecharModalMembro);
   document.getElementById('modal-membro-cancel').addEventListener('click', fecharModalMembro);
   document.getElementById('modal-membro-overlay').addEventListener('click', function(e) {
@@ -2192,6 +2439,9 @@
   document.getElementById('modal-membro-save').addEventListener('click', async function() {
     var nome = document.getElementById('nm-nome').value.trim();
     var cargo = document.getElementById('nm-cargo').value;
+    var nascimento = document.getElementById('nm-nascimento').value;
+    var escala = document.getElementById('nm-escala').value;
+    var turno = document.getElementById('nm-turno').value;
     var ativo = document.getElementById('nm-ativo').checked;
 
     if (!nome) {
@@ -2202,17 +2452,24 @@
     var botao = document.getElementById('modal-membro-save');
     botao.disabled = true;
 
-    var resultado = await db.from('equipe').insert({
+    var dadosMembro = {
       nome_completo: nome,
       cargo: cargo,
+      data_nascimento: nascimento || null,
+      escala: escala,
+      turno: turno,
       ativo: ativo,
-    });
+    };
+
+    var resultado = idMembroEmEdicao
+      ? await db.from('equipe').update(dadosMembro).eq('id', idMembroEmEdicao)
+      : await db.from('equipe').insert(dadosMembro);
 
     botao.disabled = false;
 
     if (resultado.error) {
-      console.error('Erro ao cadastrar membro da equipe:', resultado.error);
-      alert('Não foi possível cadastrar o membro. Tente novamente.');
+      console.error('Erro ao salvar membro da equipe:', resultado.error);
+      alert('Não foi possível salvar o membro. Tente novamente.');
       return;
     }
 
@@ -3063,6 +3320,7 @@
     document.querySelector('.nav-item[data-page="Vagas"]').click();
   });
 
+  // ===== Autenticação e controle de acesso =====
   async function iniciarApp() {
     await carregarEquipe();
     await carregarOcupacao();
@@ -3071,7 +3329,226 @@
     await carregarAtividadesRecentes();
     await carregarDoacoes();
   }
-  iniciarApp();
+
+  var USUARIO_ATUAL = null; // sessão do Supabase Auth
+  var PERFIL_ATUAL = null;  // { nome_completo, role } vindo da tabela "perfis"
+
+  function souAdmin() {
+    return !!(PERFIL_ATUAL && PERFIL_ATUAL.role === 'admin');
+  }
+
+  // Esconde/mostra partes da interface de acordo com o papel do usuário logado
+  function aplicarRestricoesPerfil() {
+    var navEquipe = document.querySelector('.nav-item[data-page="Equipe"]');
+    if (navEquipe) navEquipe.style.display = souAdmin() ? '' : 'none';
+
+    var navLogins = document.getElementById('nav-gerenciar-logins');
+    if (navLogins) navLogins.style.display = souAdmin() ? '' : 'none';
+
+    document.getElementById('sidebar-user-name').textContent = PERFIL_ATUAL ? PERFIL_ATUAL.nome_completo : 'Usuário';
+    document.getElementById('sidebar-user-role').textContent = souAdmin() ? 'Administrador(a)' : 'Equipe';
+    document.getElementById('sidebar-avatar').textContent = PERFIL_ATUAL ? iniciais(PERFIL_ATUAL.nome_completo) : '?';
+  }
+
+  function mostrarLogin(mensagemErro) {
+    document.getElementById('app-root').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    var erroEl = document.getElementById('login-erro');
+    if (mensagemErro) {
+      erroEl.textContent = mensagemErro;
+      erroEl.style.display = 'block';
+    } else {
+      erroEl.style.display = 'none';
+    }
+  }
+
+  function mostrarApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display = 'flex';
+  }
+
+  // Busca o perfil (nome + papel) do usuário logado na tabela "perfis" e libera o acesso ao app
+  async function carregarPerfilEEntrar(usuario) {
+    USUARIO_ATUAL = usuario;
+
+    var resultado = await db.from('perfis').select('nome_completo, role').eq('id', usuario.id).single();
+
+    if (resultado.error || !resultado.data) {
+      console.error('Erro ao carregar perfil do usuário:', resultado.error);
+      await db.auth.signOut();
+      mostrarLogin('Sua conta ainda não tem um perfil de acesso configurado. Fale com o administrador do sistema.');
+      return;
+    }
+
+    PERFIL_ATUAL = resultado.data;
+    mostrarApp();
+    aplicarRestricoesPerfil();
+    await iniciarApp();
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var email = document.getElementById('login-email').value.trim();
+    var senha = document.getElementById('login-senha').value;
+    var botao = document.getElementById('login-submit');
+
+    botao.disabled = true;
+    botao.textContent = 'Entrando...';
+
+    var resultado = await db.auth.signInWithPassword({ email: email, password: senha });
+
+    botao.disabled = false;
+    botao.textContent = 'Entrar';
+
+    if (resultado.error) {
+      console.error('Erro ao entrar:', resultado.error);
+      mostrarLogin('Email ou senha incorretos. Tente novamente.');
+      return;
+    }
+
+    await carregarPerfilEEntrar(resultado.data.user);
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', async function() {
+    var confirmar = confirm('Deseja realmente sair do sistema?');
+    if (!confirmar) return;
+    await db.auth.signOut();
+    USUARIO_ATUAL = null;
+    PERFIL_ATUAL = null;
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-senha').value = '';
+    mostrarLogin();
+  });
+
+  // ===== Gerenciar Logins (somente admin) =====
+  function fecharModalLogins() {
+    document.getElementById('modal-logins-overlay').classList.remove('open');
+    document.getElementById('logins-erro').style.display = 'none';
+    document.getElementById('log-nome').value = '';
+    document.getElementById('log-email').value = '';
+    document.getElementById('log-senha').value = '';
+    document.getElementById('log-role').value = 'user';
+  }
+
+  async function carregarListaLogins() {
+    var listaEl = document.getElementById('logins-lista');
+    listaEl.innerHTML = '<p class="content-subtitle" style="margin:0 0 10px;">Carregando usuários...</p>';
+
+    var resultado = await db.from('perfis').select('id, nome_completo, email, role').order('nome_completo');
+
+    if (resultado.error) {
+      console.error('Erro ao carregar logins:', resultado.error);
+      listaEl.innerHTML = '<p class="content-subtitle" style="margin:0;">Não foi possível carregar a lista de usuários.</p>';
+      return;
+    }
+
+    if (!resultado.data || resultado.data.length === 0) {
+      listaEl.innerHTML = '<p class="content-subtitle" style="margin:0;">Nenhum usuário cadastrado ainda.</p>';
+      return;
+    }
+
+    listaEl.innerHTML = resultado.data.map(function(p) {
+      var corPapel = p.role === 'admin' ? 'var(--navy)' : 'var(--text-muted)';
+      return '' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">' +
+          '<div>' +
+            '<strong>' + (p.nome_completo || '(sem nome)') + '</strong><br/>' +
+            '<span style="color:var(--text-muted);">' + (p.email || '') + '</span>' +
+          '</div>' +
+          '<span style="font-weight:700; color:' + corPapel + ';">' + (p.role === 'admin' ? 'Admin' : 'Usuário') + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function abrirModalLogins() {
+    document.getElementById('modal-logins-overlay').classList.add('open');
+    carregarListaLogins();
+  }
+
+  document.getElementById('nav-gerenciar-logins').addEventListener('click', abrirModalLogins);
+  document.getElementById('modal-logins-close').addEventListener('click', fecharModalLogins);
+  document.getElementById('modal-logins-cancel').addEventListener('click', fecharModalLogins);
+  document.getElementById('modal-logins-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-logins-overlay')) fecharModalLogins();
+  });
+
+  document.getElementById('modal-logins-save').addEventListener('click', async function() {
+    var nome = document.getElementById('log-nome').value.trim();
+    var email = document.getElementById('log-email').value.trim();
+    var senha = document.getElementById('log-senha').value;
+    var role = document.getElementById('log-role').value;
+    var erroEl = document.getElementById('logins-erro');
+    var botao = document.getElementById('modal-logins-save');
+
+    erroEl.style.display = 'none';
+
+    if (!nome || !email || !senha) {
+      erroEl.textContent = 'Preencha nome, email e senha.';
+      erroEl.style.display = 'block';
+      return;
+    }
+    if (senha.length < 6) {
+      erroEl.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+      erroEl.style.display = 'block';
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = 'Cadastrando...';
+
+    // 1) Cria o usuário no Supabase Auth usando o client auxiliar,
+    //    para não derrubar a sessão do admin que está logado agora.
+    var criacao = await dbNovoLogin.auth.signUp({ email: email, password: senha });
+
+    if (criacao.error || !criacao.data || !criacao.data.user) {
+      console.error('Erro ao criar login:', criacao.error);
+      erroEl.textContent = criacao.error && criacao.error.message === 'User already registered'
+        ? 'Já existe um usuário cadastrado com esse email.'
+        : 'Não foi possível criar o login. ' + (criacao.error ? criacao.error.message : '');
+      erroEl.style.display = 'block';
+      botao.disabled = false;
+      botao.textContent = 'Cadastrar login';
+      return;
+    }
+
+    // 2) Cria o perfil (nome, email e papel) vinculado ao novo usuário.
+    var perfil = await db.from('perfis').insert({
+      id: criacao.data.user.id,
+      nome_completo: nome,
+      email: email,
+      role: role
+    });
+
+    botao.disabled = false;
+    botao.textContent = 'Cadastrar login';
+
+    if (perfil.error) {
+      console.error('Erro ao salvar perfil do novo login:', perfil.error);
+      erroEl.textContent = 'O login foi criado, mas não foi possível salvar o perfil (nome/papel). Fale com o suporte técnico.';
+      erroEl.style.display = 'block';
+      return;
+    }
+
+    // Encerra a sessão criada pelo signUp no client auxiliar (não afeta o admin logado no client principal)
+    await dbNovoLogin.auth.signOut();
+
+    document.getElementById('log-nome').value = '';
+    document.getElementById('log-email').value = '';
+    document.getElementById('log-senha').value = '';
+    document.getElementById('log-role').value = 'user';
+    await carregarListaLogins();
+  });
+
+  // Ao carregar a página, verifica se já existe uma sessão válida
+  (async function verificarSessaoInicial() {
+    var resultado = await db.auth.getSession();
+    var sessao = resultado.data ? resultado.data.session : null;
+    if (sessao && sessao.user) {
+      await carregarPerfilEEntrar(sessao.user);
+    } else {
+      mostrarLogin();
+    }
+  })();
 </script>
 
 </body>
