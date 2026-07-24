@@ -289,7 +289,7 @@
   .filter-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
 
   /* Table */
-  .table-card { padding: 0; overflow: hidden; }
+  .table-card { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }
   table.data-table { width: 100%; border-collapse: collapse; }
   .data-table th {
     text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;
@@ -302,6 +302,8 @@
   .data-table tbody tr { cursor: pointer; }
   .data-table tbody tr:hover { background: var(--bg); }
   .data-table tbody tr:last-child td { border-bottom: none; }
+  .col-obs { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .col-actions { white-space: nowrap; }
   .name-cell { display: flex; align-items: center; gap: 10px; font-weight: 600; }
   .name-avatar {
     width: 30px; height: 30px; border-radius: 50%; background: var(--teal-light); color: var(--teal);
@@ -436,6 +438,20 @@
   .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .timeline-author { font-size: 12px; color: var(--text-muted); margin: 3px 0 0; font-style: italic; }
 
+  /* Modal: Histórico de acolhidos */
+  .hist-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; font-size: 13.5px;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item:hover { background: var(--bg); }
+  .hist-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); flex-shrink: 0; cursor: pointer; }
+  .hist-item-todos { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: var(--bg); }
+  .hist-item-info { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .hist-item-nome { margin: 0; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-item-sub { margin: 1px 0 0; font-size: 11.5px; color: var(--text-muted); }
+
   /* Modal: Novo Acolhimento */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(18,40,63,0.45);
@@ -497,6 +513,8 @@
   }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -883,6 +901,10 @@
             <option value="all">Todo o histórico</option>
           </select>
         </div>
+        <button class="btn-secondary" id="btn-historico-acolhidos" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; align-self:flex-end;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+          Histórico
+        </button>
       </div>
 
       <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
@@ -1240,6 +1262,33 @@
     </div>
   </div>
 </div>
+<div class="modal-overlay" id="modal-historico-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>Histórico de acolhidos</h3>
+      <button class="drawer-close" id="modal-historico-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding-bottom:0;">
+      <div class="form-field">
+        <input type="text" class="form-input" id="hist-busca" placeholder="Buscar acolhido pelo nome..." />
+      </div>
+      <label class="hist-item hist-item-todos" for="hist-todos">
+        <input type="checkbox" id="hist-todos" />
+        <div class="hist-item-info">
+          <p class="hist-item-nome">Selecionar todos</p>
+        </div>
+      </label>
+      <div id="hist-lista" style="max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:10px; margin-bottom:16px;"></div>
+      <p class="content-subtitle" id="hist-contagem" style="margin:-6px 0 16px;">Nenhum acolhido selecionado.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-historico-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-historico-baixar" disabled>Baixar histórico</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-atribuir-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -1377,7 +1426,11 @@
       </button>
     </div>
     <div class="modal-body">
-      <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:14px;">
+        <button class="btn-secondary" id="btn-agenda-pdf" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          Baixar PDF
+        </button>
         <button class="btn-primary" id="btn-nova-agenda">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Novo agendamento
@@ -1393,7 +1446,8 @@
               <th>Acompanhado</th>
               <th>Carro</th>
               <th>Técnico solicitante</th>
-              <th></th>
+              <th class="col-obs">Observação</th>
+              <th class="col-actions"></th>
             </tr>
           </thead>
           <tbody id="agenda-tbody"></tbody>
@@ -1407,7 +1461,7 @@
 <div class="modal-overlay" id="modal-agenda-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3>Novo agendamento</h3>
+      <h3 id="modal-agenda-titulo">Novo agendamento</h3>
       <button class="drawer-close" id="modal-agenda-close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1467,7 +1521,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-agenda-cancel">Cancelar</button>
-      <button class="btn-save" id="modal-agenda-save">Salvar agendamento</button>
+      <button class="btn-save" id="modal-agenda-save" data-texto-padrao="Salvar agendamento">Salvar agendamento</button>
     </div>
   </div>
 </div>
@@ -2228,6 +2282,253 @@
 
   var elIndPeriodo = document.getElementById('ind-periodo');
   if (elIndPeriodo) elIndPeriodo.addEventListener('change', renderIndicadores);
+
+  // ===== Modal: Histórico de acolhidos (seleção + geração de PDF) =====
+  var HIST_SELECIONADOS = {}; // { id: true }
+
+  function histSelecionadosCount() {
+    return Object.keys(HIST_SELECIONADOS).filter(function(id) { return HIST_SELECIONADOS[id]; }).length;
+  }
+
+  function atualizarRodapeHistorico() {
+    var qtd = histSelecionadosCount();
+    var contagemEl = document.getElementById('hist-contagem');
+    var btnBaixar = document.getElementById('modal-historico-baixar');
+    if (qtd === 0) {
+      contagemEl.textContent = 'Nenhum acolhido selecionado.';
+      btnBaixar.disabled = true;
+      btnBaixar.textContent = 'Baixar histórico';
+    } else {
+      contagemEl.textContent = qtd === 1 ? '1 acolhido selecionado.' : qtd + ' acolhidos selecionados.';
+      btnBaixar.disabled = false;
+      btnBaixar.textContent = 'Baixar histórico (' + qtd + ')';
+    }
+
+    var todosEl = document.getElementById('hist-todos');
+    var busca = document.getElementById('hist-busca').value.toLowerCase();
+    var visiveis = ACOLHIDOS.filter(function(a) { return a.nome.toLowerCase().indexOf(busca) !== -1; });
+    var todosVisiveisMarcados = visiveis.length > 0 && visiveis.every(function(a) { return !!HIST_SELECIONADOS[a.id]; });
+    todosEl.checked = todosVisiveisMarcados;
+  }
+
+  function renderListaHistorico() {
+    var busca = document.getElementById('hist-busca').value.toLowerCase();
+    var lista = ACOLHIDOS.filter(function(a) { return a.nome.toLowerCase().indexOf(busca) !== -1; });
+    var container = document.getElementById('hist-lista');
+
+    if (!lista.length) {
+      container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:24px; margin:0;">Nenhum acolhido encontrado.</p>';
+      return;
+    }
+
+    container.innerHTML = lista.map(function(a) {
+      var marcado = !!HIST_SELECIONADOS[a.id];
+      return '<label class="hist-item" data-hist-id="' + a.id + '">' +
+        '<input type="checkbox" data-hist-checkbox="' + a.id + '"' + (marcado ? ' checked' : '') + ' />' +
+        '<div class="hist-item-info">' +
+          '<div>' +
+            '<p class="hist-item-nome">' + a.nome + '</p>' +
+            '<p class="hist-item-sub">' + a.vaga + ' · Entrada em ' + a.entrada + '</p>' +
+          '</div>' +
+          '<span class="status-badge ' + STATUS_CLASS[a.status] + '">' + STATUS_LABEL[a.status] + '</span>' +
+        '</div>' +
+      '</label>';
+    }).join('');
+
+    container.querySelectorAll('[data-hist-checkbox]').forEach(function(chk) {
+      chk.addEventListener('change', function() {
+        HIST_SELECIONADOS[chk.getAttribute('data-hist-checkbox')] = chk.checked;
+        atualizarRodapeHistorico();
+      });
+    });
+  }
+
+  function abrirModalHistorico() {
+    HIST_SELECIONADOS = {};
+    document.getElementById('hist-busca').value = '';
+    renderListaHistorico();
+    atualizarRodapeHistorico();
+    document.getElementById('modal-historico-overlay').classList.add('open');
+  }
+  function fecharModalHistorico() {
+    document.getElementById('modal-historico-overlay').classList.remove('open');
+  }
+
+  var btnHistoricoAcolhidos = document.getElementById('btn-historico-acolhidos');
+  if (btnHistoricoAcolhidos) btnHistoricoAcolhidos.addEventListener('click', abrirModalHistorico);
+  document.getElementById('modal-historico-close').addEventListener('click', fecharModalHistorico);
+  document.getElementById('modal-historico-cancel').addEventListener('click', fecharModalHistorico);
+  document.getElementById('modal-historico-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-historico-overlay')) fecharModalHistorico();
+  });
+  document.getElementById('hist-busca').addEventListener('input', function() {
+    renderListaHistorico();
+    atualizarRodapeHistorico();
+  });
+  document.getElementById('hist-todos').addEventListener('change', function() {
+    var marcar = this.checked;
+    var busca = document.getElementById('hist-busca').value.toLowerCase();
+    ACOLHIDOS.filter(function(a) { return a.nome.toLowerCase().indexOf(busca) !== -1; }).forEach(function(a) {
+      HIST_SELECIONADOS[a.id] = marcar;
+    });
+    renderListaHistorico();
+    atualizarRodapeHistorico();
+  });
+
+  // Monta, no PDF já aberto (doc), as páginas de histórico completo de um acolhido
+  function adicionarHistoricoAcolhidoAoPdf(doc, a, primeira) {
+    if (!primeira) doc.addPage();
+    var margem = 40, y = 40;
+    var larguraUtil = doc.internal.pageSize.getWidth() - margem * 2;
+
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('Histórico do acolhido', margem, y);
+    y += 20;
+    doc.setFontSize(13);
+    doc.text(a.nome, margem, y);
+    y += 16;
+    doc.setFontSize(9.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(90, 100, 110);
+    doc.text('Gerado em ' + new Date().toLocaleString('pt-BR'), margem, y);
+    doc.setTextColor(0, 0, 0);
+    y += 18;
+
+    function linhaCampos(campos) {
+      var colLargura = larguraUtil / campos.length;
+      campos.forEach(function(campo, idx) {
+        var x = margem + idx * colLargura;
+        doc.setFontSize(8.5);
+        doc.setTextColor(90, 100, 110);
+        doc.text(campo[0], x, y);
+        doc.setFontSize(10.5);
+        doc.setTextColor(0, 0, 0);
+        doc.text(String(campo[1] || '—'), x, y + 13, { maxWidth: colLargura - 8 });
+      });
+      y += 32;
+    }
+
+    function tituloSecao(texto) {
+      y += 6;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(27, 58, 92);
+      doc.text(texto, margem, y);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      y += 14;
+    }
+
+    tituloSecao('Dados do cadastro');
+    linhaCampos([
+      ['Nome completo', a.nome],
+      ['CPF', a.cpf],
+      ['Idade', a.idade !== '—' ? a.idade + ' anos' : '—'],
+    ]);
+    linhaCampos([
+      ['Data de nascimento', formatarData(a.dataNascimento)],
+      ['Encaminhado por', a.encaminhadoPor],
+      ['Possui deficiência', a.possuiDeficiencia ? ('Sim — ' + (a.qualDeficiencia || 'não especificada')) : 'Não'],
+    ]);
+
+    tituloSecao('Dados do acolhimento');
+    linhaCampos([
+      ['Data de acolhimento (entrada)', a.entrada],
+      ['Data do último acolhimento', formatarData(a.dataUltimoAcolhimento)],
+      ['Responsável técnico', a.responsavel],
+    ]);
+
+    tituloSecao('Informações da vaga');
+    linhaCampos([
+      ['Vaga / unidade', a.vaga],
+      ['Status atual', STATUS_LABEL[a.status] || a.status],
+      ['', ''],
+    ]);
+
+    if (a.status === 'desligado') {
+      tituloSecao('Desligamento');
+      linhaCampos([
+        ['Data de saída', formatarData(a.dataSaida)],
+        ['Motivo', a.motivoDesligamento],
+        ['', ''],
+      ]);
+      if (a.observacaoDesligamento) {
+        doc.setFontSize(8.5);
+        doc.setTextColor(90, 100, 110);
+        doc.text('Observação do desligamento', margem, y);
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        var linhasObs = doc.splitTextToSize(a.observacaoDesligamento, larguraUtil);
+        doc.text(linhasObs, margem, y + 13);
+        y += 13 + linhasObs.length * 12 + 10;
+      }
+    }
+
+    if (a.obs) {
+      tituloSecao('Observações técnicas');
+      doc.setFontSize(10);
+      var linhasTec = doc.splitTextToSize(a.obs, larguraUtil);
+      doc.text(linhasTec, margem, y);
+      y += linhasTec.length * 12 + 8;
+    }
+
+    y += 6;
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(27, 58, 92);
+    doc.text('Intercorrências', margem, y);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    y += 8;
+
+    if (!a.intercorrencias.length) {
+      doc.setFontSize(10);
+      doc.setTextColor(90, 100, 110);
+      doc.text('Nenhuma intercorrência registrada.', margem, y + 12);
+      doc.setTextColor(0, 0, 0);
+    } else {
+      var ordenadas = a.intercorrencias.slice().sort(function(x, z) { return z.data.localeCompare(x.data); });
+      var linhas = ordenadas.map(function(i) {
+        return [formatarData(i.data), GRAV_LABEL[i.gravidade || 'normal'], i.texto || '—', i.registradoPor || '—'];
+      });
+      doc.autoTable({
+        startY: y + 6,
+        margin: { left: margem, right: margem },
+        head: [['Data', 'Gravidade', 'Descrição', 'Registrado por']],
+        body: linhas,
+        styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
+        columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 60 }, 3: { cellWidth: 100 } },
+        headStyles: { fillColor: [17, 34, 64] },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+      });
+    }
+  }
+
+  function baixarHistoricoSelecionados() {
+    var selecionados = ACOLHIDOS.filter(function(a) { return !!HIST_SELECIONADOS[a.id]; });
+    if (!selecionados.length) return;
+
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) {
+      alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet e tente novamente.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    selecionados.forEach(function(a, idx) {
+      adicionarHistoricoAcolhidoAoPdf(doc, a, idx === 0);
+    });
+
+    var nomeArquivo = selecionados.length === 1
+      ? 'historico-' + selecionados[0].nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '.pdf'
+      : 'historico-acolhidos-' + hojeISO() + '.pdf';
+
+    doc.save(nomeArquivo);
+    fecharModalHistorico();
+  }
+
+  document.getElementById('modal-historico-baixar').addEventListener('click', baixarHistoricoSelecionados);
 
   // ===== Atividade recente do Dashboard =====
   // Cada linha aqui vem da tabela "atividades" no Supabase (ver instruções de criação da tabela).
@@ -3435,7 +3736,7 @@
   async function carregarAgenda() {
     var tbody = document.getElementById('agenda-tbody');
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando agenda...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando agenda...</td></tr>';
     }
 
     var resultado = await db
@@ -3447,7 +3748,7 @@
     if (resultado.error) {
       console.error('Erro ao carregar agenda do Supabase:', resultado.error);
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar a agenda. Verifique se a tabela "agenda" existe no Supabase.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar a agenda. Verifique se a tabela "agenda" existe no Supabase.</td></tr>';
       }
       return;
     }
@@ -3468,19 +3769,29 @@
         '<td>' + (a.acompanhado ? 'Sim' : 'Não') + '</td>' +
         '<td>' + (a.precisa_carro ? 'Sim' : 'Não') + '</td>' +
         '<td>' + (a.equipe ? a.equipe.nome_completo : 'A definir') + '</td>' +
-        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-agenda-id="' + a.id + '">Excluir</button></td>' +
+        '<td class="col-obs" title="' + (a.observacao ? a.observacao.replace(/"/g, '&quot;') : '') + '">' + (a.observacao || '—') + '</td>' +
+        '<td class="col-actions"><div class="row-actions">' +
+          '<button class="btn-row-action" data-acao="editar" data-agenda-id="' + a.id + '">Editar</button>' +
+          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-agenda-id="' + a.id + '">Excluir</button>' +
+        '</div></td>' +
         '</tr>';
     }).join('');
 
     if (!AGENDA.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum agendamento cadastrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum agendamento cadastrado.</td></tr>';
     }
 
     tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
       botao.addEventListener('click', function(e) {
         e.stopPropagation();
-        var item = AGENDA.find(function(a) { return a.id === botao.dataset.agendaId; });
-        if (item) excluirAgenda(item);
+        var item = AGENDA.find(function(a) { return String(a.id) === String(botao.dataset.agendaId); });
+        if (!item) return;
+        var acao = botao.dataset.acao;
+        if (acao === 'editar') {
+          abrirModalAgenda(item);
+        } else if (acao === 'excluir') {
+          excluirAgenda(item);
+        }
       });
     });
   }
@@ -3497,6 +3808,54 @@
     }
     await carregarAgenda();
   }
+
+  function baixarAgendaPdf() {
+    if (!AGENDA.length) {
+      alert('Não há agendamentos para incluir no PDF.');
+      return;
+    }
+
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) {
+      alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet e tente novamente.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('Agenda de saídas', 40, 40);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Gerado em ' + new Date().toLocaleString('pt-BR'), 40, 58);
+
+    var linhas = AGENDA.map(function(a) {
+      return [
+        formatarData(a.data),
+        a.horario ? a.horario.slice(0, 5) : '—',
+        a.local_destino || '—',
+        a.acompanhado ? 'Sim' : 'Não',
+        a.precisa_carro ? 'Sim' : 'Não',
+        a.equipe ? a.equipe.nome_completo : 'A definir',
+        a.observacao || '—',
+      ];
+    });
+
+    doc.autoTable({
+      startY: 74,
+      head: [['Data', 'Horário', 'Destino', 'Acompanhado', 'Carro', 'Técnico solicitante', 'Observação']],
+      body: linhas,
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [17, 34, 64] },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
+
+    doc.save('agenda-de-saidas-' + hojeISO() + '.pdf');
+  }
+
+  var btnAgendaPdf = document.getElementById('btn-agenda-pdf');
+  if (btnAgendaPdf) btnAgendaPdf.addEventListener('click', baixarAgendaPdf);
 
   function abrirModalAgendaLista() {
     document.getElementById('modal-agenda-lista-overlay').classList.add('open');
@@ -3536,22 +3895,30 @@
     radio.addEventListener('change', function() { atualizarRadioVisualGrupo('ag-carro-group'); });
   });
 
-  function abrirModalNovaAgenda() {
-    document.getElementById('ag-data').value = hojeISO();
-    document.getElementById('ag-horario').value = '';
-    document.getElementById('ag-destino').value = '';
-    document.getElementById('ag-obs').value = '';
-    document.querySelector('input[name="ag-acompanhado"][value="nao"]').checked = true;
-    document.querySelector('input[name="ag-carro"][value="nao"]').checked = true;
+  var idAgendaEmEdicao = null;
+
+  function abrirModalAgenda(agendaParaEditar) {
+    idAgendaEmEdicao = agendaParaEditar ? agendaParaEditar.id : null;
+    document.getElementById('modal-agenda-titulo').textContent = agendaParaEditar ? 'Editar agendamento' : 'Novo agendamento';
+    var botaoSalvar = document.getElementById('modal-agenda-save');
+    botaoSalvar.textContent = agendaParaEditar ? 'Salvar alterações' : botaoSalvar.dataset.textoPadrao;
+
+    document.getElementById('ag-data').value = agendaParaEditar ? agendaParaEditar.data : hojeISO();
+    document.getElementById('ag-horario').value = agendaParaEditar && agendaParaEditar.horario ? agendaParaEditar.horario.slice(0, 5) : '';
+    document.getElementById('ag-destino').value = agendaParaEditar ? (agendaParaEditar.local_destino || '') : '';
+    document.getElementById('ag-obs').value = agendaParaEditar ? (agendaParaEditar.observacao || '') : '';
+    document.querySelector('input[name="ag-acompanhado"][value="' + (agendaParaEditar && agendaParaEditar.acompanhado ? 'sim' : 'nao') + '"]').checked = true;
+    document.querySelector('input[name="ag-carro"][value="' + (agendaParaEditar && agendaParaEditar.precisa_carro ? 'sim' : 'nao') + '"]').checked = true;
     atualizarRadioVisualGrupo('ag-acompanhado-group');
     atualizarRadioVisualGrupo('ag-carro-group');
-    popularTecnicosAgenda();
+    popularTecnicosAgenda(agendaParaEditar ? agendaParaEditar.tecnico_id : null);
     document.getElementById('modal-agenda-overlay').classList.add('open');
   }
   function fecharModalNovaAgenda() {
     document.getElementById('modal-agenda-overlay').classList.remove('open');
+    idAgendaEmEdicao = null;
   }
-  document.getElementById('btn-nova-agenda').addEventListener('click', abrirModalNovaAgenda);
+  document.getElementById('btn-nova-agenda').addEventListener('click', function() { abrirModalAgenda(); });
   document.getElementById('modal-agenda-close').addEventListener('click', fecharModalNovaAgenda);
   document.getElementById('modal-agenda-cancel').addEventListener('click', fecharModalNovaAgenda);
   document.getElementById('modal-agenda-overlay').addEventListener('click', function(e) {
@@ -3575,7 +3942,7 @@
     var botao = document.getElementById('modal-agenda-save');
     botao.disabled = true;
 
-    var resultado = await db.from('agenda').insert({
+    var dadosAgendamento = {
       data: data,
       horario: horario,
       local_destino: destino,
@@ -3583,13 +3950,17 @@
       precisa_carro: precisaCarro,
       tecnico_id: tecnicoId,
       observacao: observacao || null,
-    });
+    };
+
+    var resultado = idAgendaEmEdicao
+      ? await db.from('agenda').update(dadosAgendamento).eq('id', idAgendaEmEdicao)
+      : await db.from('agenda').insert(dadosAgendamento);
 
     botao.disabled = false;
 
     if (resultado.error) {
-      console.error('Erro ao registrar agendamento no Supabase:', resultado.error);
-      alert('Não foi possível registrar o agendamento. Verifique se a tabela "agenda" existe no Supabase e tente novamente.');
+      console.error('Erro ao salvar agendamento no Supabase:', resultado.error);
+      alert('Não foi possível salvar o agendamento. Verifique se a tabela "agenda" existe no Supabase e tente novamente.');
       return;
     }
 
