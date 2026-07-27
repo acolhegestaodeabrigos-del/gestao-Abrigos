@@ -1,5 +1,3 @@
-
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -150,6 +148,26 @@
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;
   }
   .kpi-grid-3col { grid-template-columns: repeat(3, 1fr); }
+  .kpi-grid-sm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-grid-sm .card { padding: 14px 16px; }
+  .kpi-grid-sm .kpi-value { font-size: 20px; }
+  .grid-2col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .subsection-title { font-weight: 700; font-size: 16px; margin: 0 0 2px; }
+  .subsection-subtitle { font-size: 12.5px; color: var(--text-muted); margin: 0 0 14px; }
+  .card-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+  .card-header-row .card-title { margin: 0; }
+  .btn-primary-sm {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--navy); color: #fff; border: none;
+    border-radius: 8px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn-primary-sm:hover { background: var(--navy-dark); }
+  .btn-secondary-sm {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--teal-light); color: #1F6B67; border: none;
+    border-radius: 8px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn-secondary-sm:hover { background: #D5EBEA; }
   .card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
   }
@@ -383,6 +401,10 @@
   .cat-higiene { background: var(--danger-light); color: #9A3F35; }
   .cat-vestuario { background: #E4ECFB; color: #2C4E8A; }
   .cat-outro { background: var(--amber-light); color: #8A5A12; }
+  .cat-perecivel { background: var(--danger-light); color: #9A3F35; }
+  .cat-nao_perecivel { background: var(--teal-light); color: #1F6B67; }
+  .cat-bebida { background: #E4ECFB; color: #2C4E8A; }
+  .cat-limpeza { background: var(--amber-light); color: #8A5A12; }
   .row-arrow { color: var(--text-muted); }
 
   /* Drawer (prontuário deslizante) */
@@ -648,6 +670,10 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
         <span>Doações</span>
       </button>
+      <button class="nav-item" data-page="Coordenação">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>
+        <span>Coordenação</span>
+      </button>
       <button class="nav-item" data-page="Indicadores">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="5" width="3" height="13" rx="1"/></svg>
         <span>Indicadores</span>
@@ -748,6 +774,16 @@
           </div>
           <div class="kpi-value" id="kpi-doacoes-mes">—</div>
           <div class="kpi-helper" id="kpi-doacoes-helper">Itens recebidos este mês</div>
+        </div>
+        <div class="card">
+          <div class="kpi-top">
+            <span class="kpi-label">Gasto com alimentação (mês)</span>
+            <div class="kpi-icon" style="background:rgba(199,85,74,0.1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7554A" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpi-alimentacao-gasto">—</div>
+          <div class="kpi-helper" id="kpi-alimentacao-helper">— kg consumidos este mês</div>
         </div>
       </div>
 
@@ -974,6 +1010,170 @@
           </thead>
           <tbody id="doacoes-tbody"></tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ===== PÁGINA: COORDENAÇÃO ===== -->
+    <section class="page" id="page-Coordenação">
+      <div class="content-header">
+        <div>
+          <h2 class="content-title">Coordenação</h2>
+          <p class="content-subtitle">Gestão de alimentos e gestão de recursos do abrigo</p>
+        </div>
+      </div>
+
+      <div class="grid-2col-equal">
+        <!-- ===== COLUNA: GESTÃO DE ALIMENTOS ===== -->
+        <div class="stack">
+          <div>
+            <p class="subsection-title">Gestão de Alimentos</p>
+            <p class="subsection-subtitle">Estoque, compras no mercado e consumo em Kg</p>
+          </div>
+
+          <div class="kpi-grid-sm">
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Valor total em compras</span>
+                <div class="kpi-icon" style="background:rgba(199,85,74,0.1)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7554A" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-alimentos-total">—</div>
+              <div class="kpi-helper">Soma de todas as compras</div>
+            </div>
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Kg consumidos (semana)</span>
+                <div class="kpi-icon" style="background:rgba(46,139,135,0.1)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E8B87" stroke-width="2"><path d="M6 2l.5 4M18 2l-.5 4"/><path d="M4 6h16l-1.5 13a2 2 0 0 1-2 2H7.5a2 2 0 0 1-2-2L4 6z"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-alimentos-kg-semana">—</div>
+              <div class="kpi-helper">Últimos 7 dias</div>
+            </div>
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Itens em estoque</span>
+                <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-alimentos-itens">—</div>
+              <div class="kpi-helper">Itens cadastrados</div>
+            </div>
+          </div>
+
+          <div class="card table-card">
+            <div class="card-header-row" style="padding:20px 20px 0;">
+              <p class="card-title">Estoque de alimentos</p>
+              <button class="btn-primary-sm" id="btn-novo-item-estoque">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo item
+              </button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th></th></tr>
+              </thead>
+              <tbody id="estoque-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="card table-card">
+            <div class="card-header-row" style="padding:20px 20px 0;">
+              <p class="card-title">Compras no mercado</p>
+              <button class="btn-primary-sm" id="btn-nova-compra">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nova compra
+              </button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>Data</th><th>Item</th><th>Kg</th><th>Valor</th><th></th></tr>
+              </thead>
+              <tbody id="compras-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===== COLUNA: GESTÃO DE RECURSOS ===== -->
+        <div class="stack">
+          <div>
+            <p class="subsection-title">Gestão de Recursos</p>
+            <p class="subsection-subtitle">Aportes recebidos para eventos e notas fiscais (NF)</p>
+          </div>
+
+          <div class="kpi-grid-sm">
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Recebido p/ eventos</span>
+                <div class="kpi-icon" style="background:rgba(46,139,135,0.1)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E8B87" stroke-width="2"><path d="M11 12H3v9h8"/><path d="M13 12h8v9h-8"/><path d="M12 12V3"/><path d="M8 7l4-4 4 4"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-recursos-recebido">—</div>
+              <div class="kpi-helper">Soma dos aportes</div>
+            </div>
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Total em NFs</span>
+                <div class="kpi-icon" style="background:rgba(232,163,61,0.15)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-recursos-notas">—</div>
+              <div class="kpi-helper">Soma das notas fiscais</div>
+            </div>
+            <div class="card">
+              <div class="kpi-top">
+                <span class="kpi-label">Saldo disponível</span>
+                <div class="kpi-icon" style="background:rgba(27,58,92,0.1)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.5 1.5 0 0 1 0 3H10a1.5 1.5 0 0 0 0 3h5"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="kpi-recursos-saldo">—</div>
+              <div class="kpi-helper">Recebido − NFs</div>
+            </div>
+          </div>
+
+          <div class="card table-card">
+            <div class="card-header-row" style="padding:20px 20px 0;">
+              <p class="card-title">Aportes recebidos</p>
+              <button class="btn-primary-sm" id="btn-novo-aporte">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo aporte
+              </button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>Data</th><th>Descrição</th><th>Valor</th><th></th></tr>
+              </thead>
+              <tbody id="aportes-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="card table-card">
+            <div class="card-header-row" style="padding:20px 20px 0;">
+              <p class="card-title">Notas fiscais (NF)</p>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-secondary-sm" id="btn-gerar-pdf-nf">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1F6B67" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  Gerar PDF
+                </button>
+                <button class="btn-primary-sm" id="btn-nova-nf">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Nova NF
+                </button>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>Nº NF</th><th>Data</th><th>Descrição</th><th>Valor</th><th></th></tr>
+              </thead>
+              <tbody id="notas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
