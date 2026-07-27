@@ -574,6 +574,9 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235B6B78' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");
     background-repeat: no-repeat; background-position: right 7px center;
   }
+  .status-select:disabled {
+    cursor: default; opacity: 0.75; background-image: none; padding-right: 10px;
+  }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -1528,7 +1531,7 @@
       <div class="form-field">
         <label class="form-label" for="log-role">Tipo de acesso</label>
         <select class="form-select" id="log-role">
-          <option value="user">Usuário normal</option>
+          <option value="equipe">Usuário normal</option>
           <option value="admin">Administrador(a)</option>
         </select>
       </div>
@@ -1952,6 +1955,7 @@
 
     var btnDesligar = document.getElementById('btn-desligar');
     btnDesligar.textContent = a.status === 'desligado' ? 'Religar acolhido' : 'Desligar acolhido';
+    aplicarRestricoesProntuario();
 
     document.getElementById('drawer-prontuario').classList.add('open');
     document.getElementById('drawer-overlay').classList.add('open');
@@ -3018,7 +3022,7 @@
         '<td><span class="status-badge ' + (m.ativo ? 'status-ativo' : 'status-desligado') + '" data-id="' + m.id + '" data-ativo="' + m.ativo + '" style="cursor:pointer;">' + (m.ativo ? 'Ativo' : 'Inativo') + '</span></td>' +
         '<td><div class="row-actions">' +
           '<button class="btn-row-action" data-acao="editar" data-membro-id="' + m.id + '">Editar</button>' +
-          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-membro-id="' + m.id + '">Excluir</button>' +
+          (souAdmin() ? '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-membro-id="' + m.id + '">Excluir</button>' : '') +
         '</div></td>';
       tbody.appendChild(tr);
     });
@@ -3056,6 +3060,10 @@
   }
 
   async function excluirMembro(membro) {
+    if (!souAdmin()) {
+      alert('Apenas administradores podem excluir membros da equipe.');
+      return;
+    }
     var responsavelPor = ACOLHIDOS.filter(function(a) {
       return a.responsavelTecnicoId === membro.id && a.status !== 'desligado';
     });
@@ -3204,7 +3212,7 @@
         '<td><div class="row-actions">' +
           '<button class="btn-row-action" data-acao="atribuir" data-vaga-id="' + v.id + '">' + (ocupante ? 'Trocar' : 'Atribuir') + '</button>' +
           '<button class="btn-row-action" data-acao="editar" data-vaga-id="' + v.id + '">Editar</button>' +
-          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-vaga-id="' + v.id + '">Excluir</button>' +
+          (souAdmin() ? '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-vaga-id="' + v.id + '">Excluir</button>' : '') +
         '</div></td>';
       tbody.appendChild(tr);
     });
@@ -3610,6 +3618,10 @@
 
   // ===== Excluir vaga =====
   async function excluirVaga(vaga) {
+    if (!souAdmin()) {
+      alert('Apenas administradores podem excluir vagas.');
+      return;
+    }
     var ocupante = ocupanteDaVaga(vaga);
     if (ocupante) {
       alert('Esta vaga está ocupada por ' + ocupante.nome_completo + '. Remova o vínculo (botão "Trocar" → "Deixar vaga livre") antes de excluí-la.');
@@ -4279,9 +4291,28 @@
     var navLogins = document.getElementById('nav-gerenciar-logins');
     if (navLogins) navLogins.style.display = souAdmin() ? '' : 'none';
 
+    // Upload/importação de planilhas: somente administradores
+    ['btn-importar-vagas', 'btn-importar-acolhidos', 'btn-importar-equipe'].forEach(function(id) {
+      var botao = document.getElementById(id);
+      if (botao) botao.style.display = souAdmin() ? '' : 'none';
+    });
+
+    // Desligar acolhido / mudar status no prontuário: somente administradores
+    aplicarRestricoesProntuario();
+
     document.getElementById('sidebar-user-name').textContent = PERFIL_ATUAL ? PERFIL_ATUAL.nome_completo : 'Usuário';
     document.getElementById('sidebar-user-role').textContent = souAdmin() ? 'Administrador(a)' : 'Equipe';
     document.getElementById('sidebar-avatar').textContent = PERFIL_ATUAL ? iniciais(PERFIL_ATUAL.nome_completo) : '?';
+  }
+
+  // Esconde o botão "Desligar acolhido" e bloqueia a troca de status no prontuário
+  // para usuários que não são administradores.
+  function aplicarRestricoesProntuario() {
+    var btnDesligar = document.getElementById('btn-desligar');
+    if (btnDesligar) btnDesligar.style.display = souAdmin() ? '' : 'none';
+
+    var statusEl = document.getElementById('drawer-status');
+    if (statusEl) statusEl.disabled = !souAdmin();
   }
 
   function mostrarLogin(mensagemErro) {
@@ -4361,7 +4392,7 @@
     document.getElementById('log-nome').value = '';
     document.getElementById('log-email').value = '';
     document.getElementById('log-senha').value = '';
-    document.getElementById('log-role').value = 'user';
+    document.getElementById('log-role').value = 'equipe';
   }
 
   async function carregarListaLogins() {
@@ -4469,7 +4500,7 @@
     document.getElementById('log-nome').value = '';
     document.getElementById('log-email').value = '';
     document.getElementById('log-senha').value = '';
-    document.getElementById('log-role').value = 'user';
+    document.getElementById('log-role').value = 'equipe';
     await carregarListaLogins();
     mostrarToast('Login cadastrado.');
   });
@@ -4609,6 +4640,10 @@
   var IMPORT_TIPO_ATUAL = null;
 
   function abrirModalImportar(tipo) {
+    if (!souAdmin()) {
+      alert('Apenas administradores podem importar planilhas.');
+      return;
+    }
     IMPORT_TIPO_ATUAL = tipo;
     var config = IMPORT_CONFIG[tipo];
     document.getElementById('modal-importar-titulo').textContent = 'Importar planilha — ' + config.titulo;
