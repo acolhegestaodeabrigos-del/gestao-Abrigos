@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -577,6 +578,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -816,10 +818,16 @@
           <h2 class="content-title">Vagas</h2>
           <p class="content-subtitle">Gestão de leitos, unidades e status de ocupação</p>
         </div>
-        <button class="btn-primary" id="btn-nova-vaga">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova vaga
-        </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-secondary" id="btn-importar-vagas" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+            Importar planilha
+          </button>
+          <button class="btn-primary" id="btn-nova-vaga">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nova vaga
+          </button>
+        </div>
       </div>
 
       <div class="card table-card">
@@ -846,10 +854,16 @@
           <h2 class="content-title">Acolhidos</h2>
           <p class="content-subtitle">Cadastro, prontuário e acompanhamento técnico</p>
         </div>
-        <button class="btn-primary" id="btn-novo-acolhimento">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo acolhimento
-        </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-secondary" id="btn-importar-acolhidos" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+            Importar planilha
+          </button>
+          <button class="btn-primary" id="btn-novo-acolhimento">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo acolhimento
+          </button>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -890,10 +904,16 @@
           <h2 class="content-title">Equipe</h2>
           <p class="content-subtitle">Profissionais, voluntários e escalas</p>
         </div>
-        <button class="btn-primary" id="btn-novo-membro">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo membro
-        </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-secondary" id="btn-importar-equipe" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+            Importar planilha
+          </button>
+          <button class="btn-primary" id="btn-novo-membro">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo membro
+          </button>
+        </div>
       </div>
 
       <div class="card table-card">
@@ -1439,6 +1459,37 @@
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-membro-cancel">Cancelar</button>
       <button class="btn-save" id="modal-membro-save">Salvar membro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Importar planilha (Vagas / Acolhidos / Equipe) -->
+<div class="modal-overlay" id="modal-importar-overlay">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 id="modal-importar-titulo">Importar planilha</h3>
+      <button class="drawer-close" id="modal-importar-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="content-subtitle" id="importar-instrucoes" style="margin:0 0 16px; line-height:1.5;"></p>
+
+      <button type="button" class="btn-link" id="importar-baixar-modelo" style="margin-bottom:18px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+        Baixar planilha modelo (.csv)
+      </button>
+
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="importar-arquivo">Arquivo (.xlsx, .xls ou .csv)</label>
+        <input type="file" class="form-input" id="importar-arquivo" accept=".xlsx,.xls,.csv" style="padding:7px 10px;" />
+      </div>
+
+      <p class="form-hint" id="importar-status" style="display:none; margin-top:14px;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-importar-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-importar-save">Importar</button>
     </div>
   </div>
 </div>
@@ -4421,6 +4472,368 @@
     document.getElementById('log-role').value = 'user';
     await carregarListaLogins();
     mostrarToast('Login cadastrado.');
+  });
+
+  // ===== Importar planilha (Vagas / Acolhidos / Equipe) =====
+  // Permite cadastrar várias linhas de uma vez a partir de um arquivo .xlsx, .xls ou .csv.
+
+  // Remove acentos, espaços extras e caixa alta/baixa para comparar nomes de coluna e valores com flexibilidade.
+  function normalizarTexto(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Converte um valor de célula (Date, texto dd/mm/aaaa, texto aaaa-mm-dd ou número serial do Excel) em data ISO (aaaa-mm-dd).
+  function parseDataFlexivel(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (v instanceof Date) {
+      if (isNaN(v.getTime())) return null;
+      return v.toISOString().slice(0, 10);
+    }
+    var s = String(v).trim();
+    if (!s) return null;
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[3]).padStart(2, '0');
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (m) return m[3] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+    if (/^\d+(\.\d+)?$/.test(s)) {
+      var numero = parseFloat(s);
+      var dataBase = new Date(Date.UTC(1899, 11, 30));
+      dataBase.setUTCDate(dataBase.getUTCDate() + Math.round(numero));
+      return dataBase.toISOString().slice(0, 10);
+    }
+    return null;
+  }
+
+  // Dado um texto digitado e um mapa { chave: 'Rótulo' }, encontra a chave correspondente (por rótulo ou pela própria chave).
+  function mapearPorLabelOuChave(textoDigitado, labelMap, valorPadrao) {
+    var norm = normalizarTexto(textoDigitado);
+    if (!norm) return valorPadrao;
+    var chaves = Object.keys(labelMap);
+    for (var i = 0; i < chaves.length; i++) {
+      if (normalizarTexto(chaves[i]) === norm || normalizarTexto(labelMap[chaves[i]]) === norm) return chaves[i];
+    }
+    for (var j = 0; j < chaves.length; j++) {
+      if (normalizarTexto(labelMap[chaves[j]]).indexOf(norm) !== -1) return chaves[j];
+    }
+    return valorPadrao;
+  }
+
+  // A partir de uma linha da planilha (objeto com os cabeçalhos originais como chaves), monta um objeto
+  // só com os campos que o sistema espera, usando a lista de sinônimos aceitos para cada campo.
+  function mapearColunas(linhaOriginal, sinonimos) {
+    var resultado = {};
+    var chavesOriginais = Object.keys(linhaOriginal);
+    Object.keys(sinonimos).forEach(function(campo) {
+      var candidatos = sinonimos[campo];
+      var chaveEncontrada = chavesOriginais.find(function(chaveOriginal) {
+        return candidatos.indexOf(normalizarTexto(chaveOriginal)) !== -1;
+      });
+      resultado[campo] = chaveEncontrada ? linhaOriginal[chaveEncontrada] : '';
+    });
+    return resultado;
+  }
+
+  // Lê o arquivo escolhido (xlsx, xls ou csv) e devolve um array de objetos, um por linha da planilha.
+  function lerArquivoParaLinhas(arquivo) {
+    return new Promise(function(resolve, reject) {
+      var leitor = new FileReader();
+      leitor.onload = function(e) {
+        try {
+          var dados = new Uint8Array(e.target.result);
+          var pasta = XLSX.read(dados, { type: 'array', cellDates: true });
+          var primeiraAba = pasta.SheetNames[0];
+          var planilha = pasta.Sheets[primeiraAba];
+          var linhas = XLSX.utils.sheet_to_json(planilha, { defval: '' });
+          resolve(linhas);
+        } catch (erro) {
+          reject(erro);
+        }
+      };
+      leitor.onerror = function() { reject(new Error('Não foi possível ler o arquivo.')); };
+      leitor.readAsArrayBuffer(arquivo);
+    });
+  }
+
+  var IMPORT_CONFIG = {
+    vagas: {
+      titulo: 'Vagas',
+      instrucoes: 'A planilha deve ter as colunas <strong>Identificação</strong>, <strong>Unidade</strong> e <strong>Status</strong> (Disponível ou Ocupada). As colunas "Ocupado por" e "Ação" são geradas automaticamente pelo sistema e não precisam estar na planilha.',
+      colunasModelo: ['Identificação', 'Unidade', 'Status'],
+      exemploLinha: ['Leito 01', 'Casa de Acolhimento Central', 'Disponível'],
+      sinonimos: {
+        identificacao: ['identificacao', 'id', 'leito', 'quarto'],
+        unidade: ['unidade', 'casa', 'local'],
+        status: ['status', 'situacao'],
+      },
+    },
+    acolhidos: {
+      titulo: 'Acolhidos',
+      instrucoes: 'A planilha deve ter as colunas <strong>Nome</strong>, <strong>Idade</strong>, <strong>Status</strong> (Ativo, Em avaliação ou Desligado), <strong>Vaga</strong> (a Identificação de uma vaga já cadastrada), <strong>Entrada</strong> (data) e <strong>Responsável técnico</strong> (nome de alguém já cadastrado em Equipe). Também aceita <strong>CPF</strong>, <strong>Data de nascimento</strong>, <strong>Último acolhimento</strong> (se houver), <strong>Encaminhado</strong>, <strong>Possui deficiência?</strong> e <strong>Qual deficiência</strong> — essas informações são salvas nos campos correspondentes e também resumidas nas Observações do acolhido. Vaga e Responsável ficam em branco se o nome informado não for encontrado.',
+      colunasModelo: ['Nome', 'Idade', 'Status', 'Vaga', 'Entrada', 'Responsável técnico', 'CPF', 'Data de nascimento', 'Último acolhimento', 'Encaminhado', 'Possui deficiência?', 'Qual deficiência'],
+      exemploLinha: ['Maria da Silva', '34', 'Ativo', 'Leito 01', '01/03/2026', 'João Pereira', '000.000.000-00', '10/05/1990', '15/01/2024', 'CREAS', 'Não', ''],
+      sinonimos: {
+        nome: ['nome', 'nome completo', 'acolhido'],
+        idade: ['idade'],
+        status: ['status', 'situacao'],
+        vaga: ['vaga', 'identificacao da vaga', 'leito', 'quarto'],
+        dataEntrada: ['entrada', 'data de entrada', 'data entrada'],
+        responsavel: ['responsavel tecnico', 'responsavel', 'tecnico responsavel'],
+        dataNascimento: ['data de nascimento', 'nascimento', 'data nascimento', 'data de nasc'],
+        cpf: ['cpf'],
+        dataUltimoAcolhimento: ['ultimo acolhimento', 'ultimo acolhimento (se houver)', 'data do ultimo acolhimento'],
+        encaminhadoPor: ['encaminhado', 'encaminhado por', 'origem'],
+        possuiDeficiencia: ['possui deficiencia', 'possui deficiencia?', 'deficiencia'],
+        qualDeficiencia: ['qual deficiencia', 'qual a deficiencia', 'tipo de deficiencia'],
+      },
+    },
+    equipe: {
+      titulo: 'Equipe',
+      instrucoes: 'A planilha deve ter as colunas <strong>Nome</strong>, <strong>Cargo</strong>, <strong>Escala</strong>, <strong>Turno</strong>, <strong>Aniversário</strong> (data) e <strong>Status</strong> (Ativo ou Inativo). A coluna "Ação" é gerada automaticamente e não precisa estar na planilha.',
+      colunasModelo: ['Nome', 'Cargo', 'Escala', 'Turno', 'Aniversário', 'Status'],
+      exemploLinha: ['João Pereira', 'Assistente Social', '12x36', 'Manhã', '15/05/1990', 'Ativo'],
+      sinonimos: {
+        nome: ['nome', 'nome completo'],
+        cargo: ['cargo', 'funcao'],
+        escala: ['escala'],
+        turno: ['turno'],
+        aniversario: ['aniversario', 'data de aniversario', 'nascimento', 'data de nascimento'],
+        status: ['status', 'situacao'],
+      },
+    },
+  };
+
+  var IMPORT_TIPO_ATUAL = null;
+
+  function abrirModalImportar(tipo) {
+    IMPORT_TIPO_ATUAL = tipo;
+    var config = IMPORT_CONFIG[tipo];
+    document.getElementById('modal-importar-titulo').textContent = 'Importar planilha — ' + config.titulo;
+    document.getElementById('importar-instrucoes').innerHTML = config.instrucoes;
+    document.getElementById('importar-arquivo').value = '';
+    var statusEl = document.getElementById('importar-status');
+    statusEl.style.display = 'none';
+    statusEl.textContent = '';
+    document.getElementById('modal-importar-overlay').classList.add('open');
+  }
+  function fecharModalImportar() {
+    document.getElementById('modal-importar-overlay').classList.remove('open');
+    IMPORT_TIPO_ATUAL = null;
+  }
+  document.getElementById('btn-importar-vagas').addEventListener('click', function() { abrirModalImportar('vagas'); });
+  document.getElementById('btn-importar-acolhidos').addEventListener('click', function() { abrirModalImportar('acolhidos'); });
+  document.getElementById('btn-importar-equipe').addEventListener('click', function() { abrirModalImportar('equipe'); });
+  document.getElementById('modal-importar-close').addEventListener('click', fecharModalImportar);
+  document.getElementById('modal-importar-cancel').addEventListener('click', fecharModalImportar);
+  document.getElementById('modal-importar-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-importar-overlay')) fecharModalImportar();
+  });
+
+  document.getElementById('importar-baixar-modelo').addEventListener('click', function() {
+    if (!IMPORT_TIPO_ATUAL) return;
+    var config = IMPORT_CONFIG[IMPORT_TIPO_ATUAL];
+    var conteudo = '\uFEFF' + config.colunasModelo.join(';') + '\r\n' + config.exemploLinha.join(';');
+    var blob = new Blob([conteudo], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'modelo-' + IMPORT_TIPO_ATUAL + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Busca vagas e membros da equipe já cadastrados, para vincular pelo nome/identificação digitado na planilha de acolhidos.
+  async function carregarMapasAuxiliaresImportacao() {
+    var mapas = { vagasPorNome: {}, equipePorNome: {} };
+    var rv = await db.from('vagas').select('id, identificacao');
+    (rv.data || []).forEach(function(v) { mapas.vagasPorNome[normalizarTexto(v.identificacao)] = v.id; });
+    var re = await db.from('equipe').select('id, nome_completo');
+    (re.data || []).forEach(function(m) { mapas.equipePorNome[normalizarTexto(m.nome_completo)] = m.id; });
+    return mapas;
+  }
+
+  async function importarLinhaVaga(linhaOriginal) {
+    var c = mapearColunas(linhaOriginal, IMPORT_CONFIG.vagas.sinonimos);
+    var identificacao = String(c.identificacao || '').trim();
+    var unidade = String(c.unidade || '').trim();
+    if (!identificacao || !unidade) return { ok: false, mensagem: 'faltando Identificação ou Unidade.' };
+
+    var statusNorm = normalizarTexto(c.status);
+    var status = statusNorm.indexOf('ocup') !== -1 ? 'ocupada' : 'disponivel';
+
+    var r = await db.from('vagas').insert({ identificacao: identificacao, unidade: unidade, status: status });
+    if (r.error) return { ok: false, mensagem: r.error.message };
+    return { ok: true };
+  }
+
+  async function importarLinhaAcolhido(linhaOriginal, mapas) {
+    var c = mapearColunas(linhaOriginal, IMPORT_CONFIG.acolhidos.sinonimos);
+    var nome = String(c.nome || '').trim();
+    if (!nome) return { ok: false, mensagem: 'faltando Nome.' };
+
+    var statusNorm = normalizarTexto(c.status);
+    var status = 'em_avaliacao';
+    if (statusNorm.indexOf('deslig') !== -1) status = 'desligado';
+    else if (statusNorm.indexOf('avali') !== -1) status = 'em_avaliacao';
+    else if (statusNorm.indexOf('ativ') !== -1) status = 'ativo';
+
+    var dataNascimento = parseDataFlexivel(c.dataNascimento);
+    if (!dataNascimento && c.idade) {
+      var idadeNum = parseInt(String(c.idade).replace(/\D/g, ''), 10);
+      if (!isNaN(idadeNum) && idadeNum > 0 && idadeNum < 130) {
+        dataNascimento = (new Date().getFullYear() - idadeNum) + '-07-01';
+      }
+    }
+
+    var dataEntrada = parseDataFlexivel(c.dataEntrada) || hojeISO();
+
+    var vagaTexto = String(c.vaga || '').trim();
+    var vagaId = vagaTexto ? (mapas.vagasPorNome[normalizarTexto(vagaTexto)] || null) : null;
+
+    var respTexto = String(c.responsavel || '').trim();
+    var responsavelId = respTexto ? (mapas.equipePorNome[normalizarTexto(respTexto)] || null) : null;
+
+    var cpf = String(c.cpf || '').trim();
+    var ultimoAcolhimento = parseDataFlexivel(c.dataUltimoAcolhimento);
+    var encaminhadoPor = String(c.encaminhadoPor || '').trim();
+    var deficienciaNorm = normalizarTexto(c.possuiDeficiencia);
+    var temDeficiencia = ['sim', 's', 'x', 'yes', '1', 'verdadeiro', 'true'].indexOf(deficienciaNorm) !== -1;
+    var qualDeficiencia = String(c.qualDeficiencia || '').trim();
+
+    var obsPartes = ['Cadastro importado via planilha.'];
+    if (ultimoAcolhimento) obsPartes.push('Último acolhimento registrado em ' + dataBr(ultimoAcolhimento) + '.');
+    if (encaminhadoPor) obsPartes.push('Encaminhado: ' + encaminhadoPor + '.');
+    if (temDeficiencia) obsPartes.push('Possui deficiência' + (qualDeficiencia ? ' (' + qualDeficiencia + ')' : '') + '.');
+    else if (deficienciaNorm) obsPartes.push('Sem deficiência declarada.');
+
+    var r = await db.from('acolhidos').insert({
+      nome_completo: nome,
+      status: status,
+      data_entrada: dataEntrada,
+      cpf: cpf,
+      data_nascimento: dataNascimento,
+      data_ultimo_acolhimento: ultimoAcolhimento,
+      encaminhado_por: encaminhadoPor || null,
+      possui_deficiencia: temDeficiencia,
+      qual_deficiencia: temDeficiencia ? (qualDeficiencia || null) : null,
+      vaga_id: vagaId,
+      responsavel_tecnico_id: responsavelId,
+      observacoes: obsPartes.join(' '),
+    });
+    if (r.error) return { ok: false, mensagem: r.error.message };
+
+    if (vagaId) {
+      await db.from('vagas').update({ status: 'ocupada' }).eq('id', vagaId);
+    }
+    return { ok: true };
+  }
+
+  async function importarLinhaMembro(linhaOriginal) {
+    var c = mapearColunas(linhaOriginal, IMPORT_CONFIG.equipe.sinonimos);
+    var nome = String(c.nome || '').trim();
+    if (!nome) return { ok: false, mensagem: 'faltando Nome.' };
+
+    var cargo = mapearPorLabelOuChave(c.cargo, CARGO_LABEL, 'outro');
+    var escala = mapearPorLabelOuChave(c.escala, ESCALA_LABEL, '12x36');
+    var turno = mapearPorLabelOuChave(c.turno, TURNO_LABEL, 'manha');
+    var aniversario = parseDataFlexivel(c.aniversario);
+    var statusNorm = normalizarTexto(c.status);
+    var ativo = statusNorm.indexOf('inativ') === -1;
+
+    var r = await db.from('equipe').insert({
+      nome_completo: nome,
+      cargo: cargo,
+      data_nascimento: aniversario,
+      escala: escala,
+      turno: turno,
+      ativo: ativo,
+    });
+    if (r.error) return { ok: false, mensagem: r.error.message };
+    return { ok: true };
+  }
+
+  document.getElementById('modal-importar-save').addEventListener('click', async function() {
+    var tipo = IMPORT_TIPO_ATUAL;
+    if (!tipo) return;
+    var config = IMPORT_CONFIG[tipo];
+
+    var arquivoInput = document.getElementById('importar-arquivo');
+    var arquivo = arquivoInput.files[0];
+    if (!arquivo) {
+      alert('Selecione um arquivo de planilha (.xlsx, .xls ou .csv).');
+      return;
+    }
+
+    var botao = document.getElementById('modal-importar-save');
+    var statusEl = document.getElementById('importar-status');
+    botao.disabled = true;
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--text-muted)';
+    statusEl.innerHTML = 'Lendo planilha...';
+
+    var linhas;
+    try {
+      linhas = await lerArquivoParaLinhas(arquivo);
+    } catch (erro) {
+      console.error('Erro ao ler planilha:', erro);
+      statusEl.style.color = 'var(--danger)';
+      statusEl.innerHTML = 'Não foi possível ler o arquivo. Verifique se é um .xlsx, .xls ou .csv válido.';
+      botao.disabled = false;
+      return;
+    }
+
+    linhas = linhas.filter(function(linha) {
+      return Object.keys(linha).some(function(chave) { return String(linha[chave]).trim() !== ''; });
+    });
+
+    if (linhas.length === 0) {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.innerHTML = 'Nenhuma linha com dados foi encontrada na planilha.';
+      botao.disabled = false;
+      return;
+    }
+
+    statusEl.innerHTML = 'Importando ' + linhas.length + ' linha(s)...';
+
+    var mapas = tipo === 'acolhidos' ? await carregarMapasAuxiliaresImportacao() : null;
+
+    var sucesso = 0;
+    var erros = [];
+
+    for (var i = 0; i < linhas.length; i++) {
+      var resultadoLinha;
+      if (tipo === 'vagas') resultadoLinha = await importarLinhaVaga(linhas[i]);
+      else if (tipo === 'acolhidos') resultadoLinha = await importarLinhaAcolhido(linhas[i], mapas);
+      else resultadoLinha = await importarLinhaMembro(linhas[i]);
+
+      if (resultadoLinha.ok) sucesso++;
+      else erros.push('Linha ' + (i + 2) + ': ' + resultadoLinha.mensagem);
+    }
+
+    botao.disabled = false;
+
+    if (erros.length === 0) {
+      statusEl.style.color = 'var(--teal)';
+      statusEl.innerHTML = sucesso + ' registro(s) importado(s) com sucesso.';
+    } else {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.innerHTML = sucesso + ' registro(s) importado(s). ' + erros.length + ' com erro:<br>' +
+        erros.slice(0, 8).map(esc).join('<br>') + (erros.length > 8 ? '<br>...' : '');
+    }
+
+    if (sucesso > 0) {
+      if (tipo === 'vagas') await carregarVagas();
+      else if (tipo === 'acolhidos') { await carregarAcolhidos(); await carregarVagas(); }
+      else await carregarEquipe();
+      mostrarToast(sucesso + ' registro(s) importado(s) em ' + config.titulo + '.');
+    }
+
+    arquivoInput.value = '';
   });
 
   // Ao carregar a página, verifica se já existe uma sessão válida
