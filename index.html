@@ -280,6 +280,7 @@
   @media (max-width: 980px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     .grid-2col { grid-template-columns: 1fr; }
+    .grid-2col-equal { grid-template-columns: 1fr; }
   }
   @media (max-width: 700px) {
     .kpi-grid-3col { grid-template-columns: repeat(2, 1fr); }
@@ -317,9 +318,14 @@
     .kpi-value { font-size: 22px; }
     .card { padding: 14px; }
     .grid-2col { gap: 14px; }
+    .grid-2col-equal { gap: 14px; }
+    .kpi-grid-sm { grid-template-columns: 1fr; gap: 10px; }
     /* Tabela de acolhidos rola na horizontal em vez de espremer as colunas */
     .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table.data-table { min-width: 640px; }
+    /* Cabeçalho do card (título + botão) quebra em duas linhas, botão fica embaixo à esquerda */
+    .card-header-row { flex-wrap: wrap; }
+    .card-header-actions { flex-wrap: wrap; }
     .toolbar { flex-direction: column; align-items: stretch; }
     .search-box { min-width: 0; }
     .drawer { width: 100%; max-width: 100vw; }
@@ -371,6 +377,11 @@
 
   /* Table */
   .table-card { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }
+  /* Quando o card tem cabeçalho (título + botão), só a tabela rola na horizontal;
+     o cabeçalho fica sempre visível e não é "arrastado" para fora da tela. */
+  .table-card.tem-cabecalho { overflow-x: visible; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .card-header-actions { display: flex; gap: 8px; }
   table.data-table { width: 100%; border-collapse: collapse; }
   .data-table th {
     text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase;
@@ -604,6 +615,13 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+  </script>
 </head>
 <body>
 
@@ -1063,7 +1081,7 @@
             </div>
           </div>
 
-          <div class="card table-card">
+          <div class="card table-card tem-cabecalho">
             <div class="card-header-row" style="padding:20px 20px 0;">
               <p class="card-title">Estoque de alimentos</p>
               <button class="btn-primary-sm" id="btn-novo-item-estoque">
@@ -1071,15 +1089,17 @@
                 Novo item
               </button>
             </div>
-            <table class="data-table">
-              <thead>
-                <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th></th></tr>
-              </thead>
-              <tbody id="estoque-tbody"></tbody>
-            </table>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th></th></tr>
+                </thead>
+                <tbody id="estoque-tbody"></tbody>
+              </table>
+            </div>
           </div>
 
-          <div class="card table-card">
+          <div class="card table-card tem-cabecalho">
             <div class="card-header-row" style="padding:20px 20px 0;">
               <p class="card-title">Compras no mercado</p>
               <button class="btn-primary-sm" id="btn-nova-compra">
@@ -1087,12 +1107,14 @@
                 Nova compra
               </button>
             </div>
-            <table class="data-table">
-              <thead>
-                <tr><th>Data</th><th>Item</th><th>Kg</th><th>Valor</th><th></th></tr>
-              </thead>
-              <tbody id="compras-tbody"></tbody>
-            </table>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Data</th><th>Item</th><th>Kg</th><th>Valor</th><th></th></tr>
+                </thead>
+                <tbody id="compras-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -1528,6 +1550,159 @@
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-doacao-cancel">Cancelar</button>
       <button class="btn-save" id="modal-doacao-save">Registrar doação</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo item de estoque (Coordenação / Gestão de Alimentos) -->
+<div class="modal-overlay" id="modal-item-estoque-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo item de estoque</h3>
+      <button class="drawer-close" id="modal-item-estoque-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="ie-item">Item</label>
+        <input type="text" class="form-input" id="ie-item" placeholder="Ex: Arroz, feijão, óleo..." />
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-field">
+          <label class="form-label" for="ie-categoria">Categoria</label>
+          <select class="form-select" id="ie-categoria">
+            <option value="perecivel">Perecível</option>
+            <option value="nao_perecivel">Não perecível</option>
+            <option value="bebida">Bebida</option>
+            <option value="limpeza">Limpeza</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="ie-quantidade">Quantidade (kg)</label>
+          <input type="number" class="form-input" id="ie-quantidade" min="0" step="0.1" placeholder="0" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-item-estoque-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-item-estoque-save">Salvar item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova compra no mercado (Coordenação / Gestão de Alimentos) -->
+<div class="modal-overlay" id="modal-compra-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova compra no mercado</h3>
+      <button class="drawer-close" id="modal-compra-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="nc-data">Data</label>
+          <input type="date" class="form-input" id="nc-data" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="nc-item">Item</label>
+          <input type="text" class="form-input" id="nc-item" placeholder="Ex: Arroz 5kg" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-field">
+          <label class="form-label" for="nc-kg">Kg</label>
+          <input type="number" class="form-input" id="nc-kg" min="0" step="0.1" placeholder="0" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="nc-valor">Valor (R$)</label>
+          <input type="number" class="form-input" id="nc-valor" min="0" step="0.01" placeholder="0,00" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-compra-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-compra-save">Salvar compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo aporte (Coordenação / Gestão de Recursos) -->
+<div class="modal-overlay" id="modal-aporte-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Novo aporte</h3>
+      <button class="drawer-close" id="modal-aporte-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="nap-descricao">Descrição</label>
+        <input type="text" class="form-input" id="nap-descricao" placeholder="Ex: Aporte para evento de Natal" />
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-field">
+          <label class="form-label" for="nap-data">Data</label>
+          <input type="date" class="form-input" id="nap-data" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="nap-valor">Valor (R$)</label>
+          <input type="number" class="form-input" id="nap-valor" min="0" step="0.01" placeholder="0,00" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-aporte-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-aporte-save">Salvar aporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova nota fiscal (Coordenação / Gestão de Recursos) -->
+<div class="modal-overlay" id="modal-nf-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova nota fiscal</h3>
+      <button class="drawer-close" id="modal-nf-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="nnf-arquivo">Foto ou PDF da NF (opcional)</label>
+        <input type="file" class="form-input" id="nnf-arquivo" accept="image/*,application/pdf" style="padding:7px 10px;" />
+        <p class="form-hint" style="margin-top:6px;">Envie uma foto ou PDF escaneado da nota e clique em "Ler NF automaticamente" para tentar preencher o número, a descrição e o valor.</p>
+        <button type="button" class="btn-secondary-sm" id="nnf-ler-auto" style="margin-bottom:10px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          Ler NF automaticamente
+        </button>
+        <p class="form-hint" id="nnf-ocr-status" style="display:none; margin-top:-4px;"></p>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="nnf-numero">Nº da NF (Chave de Acesso)</label>
+          <input type="text" class="form-input" id="nnf-numero" placeholder="Ex: 3521 0512 3456 7000 1234 5550 0101 2345 6789 0123 4567" maxlength="60" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="nnf-data">Data</label>
+          <input type="date" class="form-input" id="nnf-data" />
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="nnf-descricao">Descrição</label>
+        <input type="text" class="form-input" id="nnf-descricao" placeholder="Ex: Compra de material de limpeza" />
+      </div>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="nnf-valor">Valor (R$)</label>
+        <input type="number" class="form-input" id="nnf-valor" min="0" step="0.01" placeholder="0,00" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-nf-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-nf-save">Salvar NF</button>
     </div>
   </div>
 </div>
@@ -3816,6 +3991,783 @@
     }
   }
 
+  // ===== Coordenação: Gestão de Alimentos e Gestão de Recursos =====
+  // Formata um número como moeda brasileira (R$ 1.234,56)
+  function formatarMoeda(valor) {
+    var n = Number(valor) || 0;
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  // Formata um número como quilos (1.234,5 kg), sem casas decimais desnecessárias
+  function formatarKg(valor) {
+    var n = Number(valor) || 0;
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' kg';
+  }
+
+  var CATEGORIA_ESTOQUE_LABEL = {
+    perecivel: 'Perecível',
+    nao_perecivel: 'Não perecível',
+    bebida: 'Bebida',
+    limpeza: 'Limpeza',
+  };
+
+  // ----- Estoque de alimentos -----
+  var ESTOQUE = [];
+
+  async function carregarEstoque() {
+    var tbody = document.getElementById('estoque-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando estoque...</td></tr>';
+
+    var resultado = await db.from('estoque_alimentos').select('*').order('item', { ascending: true });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar estoque do Supabase:', resultado.error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar o estoque. Verifique se a tabela "estoque_alimentos" existe no Supabase.</td></tr>';
+      return;
+    }
+
+    ESTOQUE = resultado.data;
+    renderEstoque();
+    atualizarKpisAlimentos();
+  }
+
+  function renderEstoque() {
+    var tbody = document.getElementById('estoque-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = ESTOQUE.map(function(i) {
+      return '<tr>' +
+        '<td>' + esc(i.item) + '</td>' +
+        '<td><span class="status-badge cat-' + i.categoria + '">' + (CATEGORIA_ESTOQUE_LABEL[i.categoria] || i.categoria) + '</span></td>' +
+        '<td>' + esc(formatarKg(i.quantidade)) + '</td>' +
+        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-item-id="' + i.id + '">Excluir</button></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!ESTOQUE.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum item cadastrado no estoque.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var item = ESTOQUE.find(function(i) { return i.id === botao.dataset.itemId; });
+        if (item) excluirItemEstoque(item);
+      });
+    });
+  }
+
+  function abrirModalItemEstoque() {
+    document.getElementById('ie-item').value = '';
+    document.getElementById('ie-categoria').value = 'perecivel';
+    document.getElementById('ie-quantidade').value = '';
+    document.getElementById('modal-item-estoque-overlay').classList.add('open');
+  }
+  function fecharModalItemEstoque() {
+    document.getElementById('modal-item-estoque-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-novo-item-estoque').addEventListener('click', abrirModalItemEstoque);
+  document.getElementById('modal-item-estoque-close').addEventListener('click', fecharModalItemEstoque);
+  document.getElementById('modal-item-estoque-cancel').addEventListener('click', fecharModalItemEstoque);
+  document.getElementById('modal-item-estoque-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-item-estoque-overlay')) fecharModalItemEstoque();
+  });
+
+  document.getElementById('modal-item-estoque-save').addEventListener('click', async function() {
+    var item = document.getElementById('ie-item').value.trim();
+    var categoria = document.getElementById('ie-categoria').value;
+    var quantidade = parseFloat(document.getElementById('ie-quantidade').value);
+
+    if (!item) { alert('Informe o nome do item.'); return; }
+    if (isNaN(quantidade) || quantidade < 0) { alert('Informe uma quantidade válida.'); return; }
+
+    var botao = document.getElementById('modal-item-estoque-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('estoque_alimentos').insert({ item: item, categoria: categoria, quantidade: quantidade });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar item de estoque no Supabase:', resultado.error);
+      alert('Não foi possível salvar o item. Verifique se a tabela "estoque_alimentos" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    fecharModalItemEstoque();
+    await carregarEstoque();
+    mostrarToast('Item de estoque salvo.');
+  });
+
+  async function excluirItemEstoque(item) {
+    var confirmar = confirm('Tem certeza que deseja excluir "' + item.item + '" do estoque? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('estoque_alimentos').delete().eq('id', item.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir item de estoque:', resultado.error);
+      alert('Não foi possível excluir o item. Tente novamente.');
+      return;
+    }
+    await carregarEstoque();
+    mostrarToast('Item de estoque excluído.');
+  }
+
+  // ----- Compras no mercado -----
+  var COMPRAS = [];
+
+  async function carregarCompras() {
+    var tbody = document.getElementById('compras-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando compras...</td></tr>';
+
+    var resultado = await db.from('compras_alimentos').select('*').order('data', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar compras do Supabase:', resultado.error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar as compras. Verifique se a tabela "compras_alimentos" existe no Supabase.</td></tr>';
+      return;
+    }
+
+    COMPRAS = resultado.data;
+    renderCompras();
+    atualizarKpisAlimentos();
+  }
+
+  function renderCompras() {
+    var tbody = document.getElementById('compras-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = COMPRAS.map(function(c) {
+      return '<tr>' +
+        '<td>' + esc(formatarData(c.data)) + '</td>' +
+        '<td>' + esc(c.item) + '</td>' +
+        '<td>' + esc(formatarKg(c.kg)) + '</td>' +
+        '<td>' + esc(formatarMoeda(c.valor)) + '</td>' +
+        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-compra-id="' + c.id + '">Excluir</button></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!COMPRAS.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhuma compra registrada.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var compra = COMPRAS.find(function(c) { return c.id === botao.dataset.compraId; });
+        if (compra) excluirCompra(compra);
+      });
+    });
+  }
+
+  function abrirModalCompra() {
+    document.getElementById('nc-data').value = hojeISO();
+    document.getElementById('nc-item').value = '';
+    document.getElementById('nc-kg').value = '';
+    document.getElementById('nc-valor').value = '';
+    document.getElementById('modal-compra-overlay').classList.add('open');
+  }
+  function fecharModalCompra() {
+    document.getElementById('modal-compra-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-nova-compra').addEventListener('click', abrirModalCompra);
+  document.getElementById('modal-compra-close').addEventListener('click', fecharModalCompra);
+  document.getElementById('modal-compra-cancel').addEventListener('click', fecharModalCompra);
+  document.getElementById('modal-compra-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-compra-overlay')) fecharModalCompra();
+  });
+
+  document.getElementById('modal-compra-save').addEventListener('click', async function() {
+    var data = document.getElementById('nc-data').value;
+    var item = document.getElementById('nc-item').value.trim();
+    var kg = parseFloat(document.getElementById('nc-kg').value);
+    var valor = parseFloat(document.getElementById('nc-valor').value);
+
+    if (!data) { alert('Selecione a data da compra.'); return; }
+    if (!item) { alert('Informe o item comprado.'); return; }
+    if (isNaN(kg) || kg < 0) { alert('Informe uma quantidade em Kg válida.'); return; }
+    if (isNaN(valor) || valor < 0) { alert('Informe um valor válido.'); return; }
+
+    var botao = document.getElementById('modal-compra-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('compras_alimentos').insert({ data: data, item: item, kg: kg, valor: valor });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar compra no Supabase:', resultado.error);
+      alert('Não foi possível salvar a compra. Verifique se a tabela "compras_alimentos" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    fecharModalCompra();
+    await carregarCompras();
+    mostrarToast('Compra registrada.');
+  });
+
+  async function excluirCompra(compra) {
+    var confirmar = confirm('Tem certeza que deseja excluir este registro de compra? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('compras_alimentos').delete().eq('id', compra.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir compra:', resultado.error);
+      alert('Não foi possível excluir a compra. Tente novamente.');
+      return;
+    }
+    await carregarCompras();
+    mostrarToast('Compra excluída.');
+  }
+
+  // KPIs da Gestão de Alimentos (Coordenação) + card "Gasto com alimentação" do Dashboard.
+  // Observação: como não há um registro dedicado de consumo, os "Kg consumidos" são
+  // calculados a partir do que foi comprado no mercado no período (semana/mês).
+  function atualizarKpisAlimentos() {
+    var kpiTotal = document.getElementById('kpi-alimentos-total');
+    if (kpiTotal) {
+      var totalComprado = COMPRAS.reduce(function(soma, c) { return soma + (Number(c.valor) || 0); }, 0);
+      kpiTotal.textContent = formatarMoeda(totalComprado);
+    }
+
+    var kpiSemana = document.getElementById('kpi-alimentos-kg-semana');
+    if (kpiSemana) {
+      var seteDiasAtras = new Date();
+      seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+      var kgSemana = COMPRAS
+        .filter(function(c) { return c.data && new Date(c.data + 'T00:00:00') >= seteDiasAtras; })
+        .reduce(function(soma, c) { return soma + (Number(c.kg) || 0); }, 0);
+      kpiSemana.textContent = formatarKg(kgSemana);
+    }
+
+    var kpiItens = document.getElementById('kpi-alimentos-itens');
+    if (kpiItens) kpiItens.textContent = ESTOQUE.length;
+
+    // Card do Dashboard: gasto e kg consumidos no mês atual
+    var kpiGasto = document.getElementById('kpi-alimentacao-gasto');
+    var kpiGastoHelper = document.getElementById('kpi-alimentacao-helper');
+    if (kpiGasto) {
+      var hoje = new Date();
+      var anoMesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+      var comprasMes = COMPRAS.filter(function(c) { return c.data && c.data.slice(0, 7) === anoMesAtual; });
+      var gastoMes = comprasMes.reduce(function(soma, c) { return soma + (Number(c.valor) || 0); }, 0);
+      var kgMes = comprasMes.reduce(function(soma, c) { return soma + (Number(c.kg) || 0); }, 0);
+      kpiGasto.textContent = formatarMoeda(gastoMes);
+      if (kpiGastoHelper) kpiGastoHelper.textContent = formatarKg(kgMes) + ' consumidos este mês';
+    }
+  }
+
+  // ----- Aportes recebidos -----
+  var APORTES = [];
+
+  async function carregarAportes() {
+    var tbody = document.getElementById('aportes-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando aportes...</td></tr>';
+
+    var resultado = await db.from('aportes_recursos').select('*').order('data', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar aportes do Supabase:', resultado.error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar os aportes. Verifique se a tabela "aportes_recursos" existe no Supabase.</td></tr>';
+      return;
+    }
+
+    APORTES = resultado.data;
+    renderAportes();
+    atualizarKpisRecursos();
+  }
+
+  function renderAportes() {
+    var tbody = document.getElementById('aportes-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = APORTES.map(function(a) {
+      return '<tr>' +
+        '<td>' + esc(formatarData(a.data)) + '</td>' +
+        '<td>' + esc(a.descricao || '—') + '</td>' +
+        '<td>' + esc(formatarMoeda(a.valor)) + '</td>' +
+        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-aporte-id="' + a.id + '">Excluir</button></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!APORTES.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhum aporte registrado.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var aporte = APORTES.find(function(a) { return a.id === botao.dataset.aporteId; });
+        if (aporte) excluirAporte(aporte);
+      });
+    });
+  }
+
+  function abrirModalAporte() {
+    document.getElementById('nap-descricao').value = '';
+    document.getElementById('nap-data').value = hojeISO();
+    document.getElementById('nap-valor').value = '';
+    document.getElementById('modal-aporte-overlay').classList.add('open');
+  }
+  function fecharModalAporte() {
+    document.getElementById('modal-aporte-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-novo-aporte').addEventListener('click', abrirModalAporte);
+  document.getElementById('modal-aporte-close').addEventListener('click', fecharModalAporte);
+  document.getElementById('modal-aporte-cancel').addEventListener('click', fecharModalAporte);
+  document.getElementById('modal-aporte-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-aporte-overlay')) fecharModalAporte();
+  });
+
+  document.getElementById('modal-aporte-save').addEventListener('click', async function() {
+    var descricao = document.getElementById('nap-descricao').value.trim();
+    var data = document.getElementById('nap-data').value;
+    var valor = parseFloat(document.getElementById('nap-valor').value);
+
+    if (!descricao) { alert('Informe uma descrição para o aporte.'); return; }
+    if (!data) { alert('Selecione a data do aporte.'); return; }
+    if (isNaN(valor) || valor < 0) { alert('Informe um valor válido.'); return; }
+
+    var botao = document.getElementById('modal-aporte-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('aportes_recursos').insert({ descricao: descricao, data: data, valor: valor });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar aporte no Supabase:', resultado.error);
+      alert('Não foi possível salvar o aporte. Verifique se a tabela "aportes_recursos" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    fecharModalAporte();
+    await carregarAportes();
+    mostrarToast('Aporte registrado.');
+  });
+
+  async function excluirAporte(aporte) {
+    var confirmar = confirm('Tem certeza que deseja excluir este aporte? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('aportes_recursos').delete().eq('id', aporte.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir aporte:', resultado.error);
+      alert('Não foi possível excluir o aporte. Tente novamente.');
+      return;
+    }
+    await carregarAportes();
+    mostrarToast('Aporte excluído.');
+  }
+
+  // ----- Notas fiscais (NF) -----
+  var NOTAS = [];
+
+  async function carregarNotas() {
+    var tbody = document.getElementById('notas-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando notas fiscais...</td></tr>';
+
+    var resultado = await db.from('notas_fiscais').select('*').order('data', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar notas fiscais do Supabase:', resultado.error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar as notas fiscais. Verifique se a tabela "notas_fiscais" existe no Supabase.</td></tr>';
+      return;
+    }
+
+    NOTAS = resultado.data;
+    renderNotas();
+    atualizarKpisRecursos();
+  }
+
+  function renderNotas() {
+    var tbody = document.getElementById('notas-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = NOTAS.map(function(n) {
+      return '<tr>' +
+        '<td>' + esc(n.numero) + '</td>' +
+        '<td>' + esc(formatarData(n.data)) + '</td>' +
+        '<td>' + esc(n.descricao || '—') + '</td>' +
+        '<td>' + esc(formatarMoeda(n.valor)) + '</td>' +
+        '<td><button class="btn-row-action btn-row-danger" data-acao="excluir" data-nf-id="' + n.id + '">Excluir</button></td>' +
+        '</tr>';
+    }).join('');
+
+    if (!NOTAS.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhuma nota fiscal registrada.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var nf = NOTAS.find(function(n) { return n.id === botao.dataset.nfId; });
+        if (nf) excluirNota(nf);
+      });
+    });
+  }
+
+  function abrirModalNota() {
+    document.getElementById('nnf-numero').value = '';
+    document.getElementById('nnf-data').value = hojeISO();
+    document.getElementById('nnf-descricao').value = '';
+    document.getElementById('nnf-valor').value = '';
+    document.getElementById('nnf-arquivo').value = '';
+    var statusOcr = document.getElementById('nnf-ocr-status');
+    statusOcr.style.display = 'none';
+    statusOcr.innerHTML = '';
+    document.getElementById('modal-nf-overlay').classList.add('open');
+  }
+
+  // ----- Leitura automática da NF (OCR) -----
+
+  // Converte a primeira página de um PDF em uma imagem (canvas), pois o Tesseract não lê PDF diretamente.
+  async function converterPdfEmImagem(arquivo) {
+    var bufer = await arquivo.arrayBuffer();
+    var pdf = await pdfjsLib.getDocument({ data: bufer }).promise;
+    var pagina = await pdf.getPage(1);
+    var escala = 2.2; // resolução maior ajuda a precisão do OCR
+    var viewport = pagina.getViewport({ scale: escala });
+    var canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await pagina.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+    return canvas;
+  }
+
+  // Converte "1.234,56" ou "1234,56" ou "1234.56" em número (formato monetário BR)
+  function parseValorMonetarioBR(texto) {
+    var limpo = String(texto).replace(/[^\d.,]/g, '');
+    if (!limpo) return NaN;
+    if (limpo.indexOf(',') !== -1) {
+      limpo = limpo.replace(/\./g, '').replace(',', '.');
+    }
+    return parseFloat(limpo);
+  }
+
+  // Tenta localizar a Chave de Acesso (44 dígitos, normalmente impressos em
+  // 11 blocos de 4 dígitos na mesma linha, ex:
+  // "3521 0512 3456 7000 1234 5550 0101 2345 6789 0123 4567")
+  function extrairChaveAcesso(texto) {
+    // normaliza espaços/tabs (mas preserva quebras de linha, tratadas à parte)
+    var linhas = String(texto).split(/\n/);
+
+    // 1) procura, em cada linha, 11 blocos de 4 dígitos separados por espaço/ponto/hífen
+    var regexBlocos = /\b(\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4}[\s.\-]?\d{4})\b/;
+    for (var i = 0; i < linhas.length; i++) {
+      var m = linhas[i].match(regexBlocos);
+      if (m) {
+        var digitos = m[1].replace(/\D/g, '');
+        if (digitos.length === 44) return digitos;
+      }
+    }
+
+    // 2) fallback: 44 dígitos corridos, sem separador nenhum
+    var textoJunto = texto.replace(/[\s.\-]/g, '');
+    var m2 = textoJunto.match(/\d{44}/);
+    if (m2) return m2[0];
+
+    // 3) fallback: uma linha com pelo menos 8 blocos de 4 dígitos (tolera 1-2 blocos
+    // perdidos/errados pelo OCR), desde que o total fique entre 40 e 44 dígitos
+    var regexParcial = /\b((?:\d{4}[\s.\-]){7,10}\d{2,4})\b/;
+    for (var j = 0; j < linhas.length; j++) {
+      var mp = linhas[j].match(regexParcial);
+      if (mp) {
+        var digitosParcial = mp[1].replace(/\D/g, '');
+        if (digitosParcial.length >= 40 && digitosParcial.length <= 44) return digitosParcial;
+      }
+    }
+
+    return null;
+  }
+
+  // Tenta localizar o número da NF no texto reconhecido pelo OCR.
+  // Prioridade: Chave de Acesso (44 dígitos). Se não encontrar, cai para o
+  // número curto impresso perto de "Nº"/"Série".
+  function extrairNumeroNF(texto) {
+    var chave = extrairChaveAcesso(texto);
+    if (chave) return chave;
+
+    var padroes = [
+      /n[°ºo]\.?\s*([\d\.]{3,12})\s*s[ée]rie/i,
+      /n[úu°ºo\.]{0,3}\s*(?:da\s*)?nf[-\s]?e?\.?\s*[:nº°]*\s*([\d\.]{3,12})/i,
+      /nota\s*fiscal\s*(?:eletr[oô]nica)?\s*n[úu°ºo\.]{0,3}\s*[:]?\s*([\d\.]{3,12})/i,
+      /n[úu]mero\s*(?:da\s*nf)?\s*[:]?\s*([\d\.]{3,12})/i,
+      /n[°ºo]\.?\s*([\d\.]{3,12})/i,
+    ];
+    for (var i = 0; i < padroes.length; i++) {
+      var m = texto.match(padroes[i]);
+      if (m && m[1]) {
+        var numeroLimpo = m[1].replace(/\./g, '');
+        if (numeroLimpo.length >= 2 && numeroLimpo.length <= 9) return numeroLimpo;
+      }
+    }
+    return null;
+  }
+
+  // Tenta localizar o valor total da NF no texto reconhecido pelo OCR
+  function extrairValorNF(texto) {
+    var regexValor = /(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g;
+    var palavrasChaveTotal = /valor\s*total|total\s*da\s*nota|total\s*a\s*pagar|total\s*geral|valor\s*l[íi]quido/i;
+    var linhas = texto.split(/\n/);
+
+    // 1) procura uma linha com palavra-chave de total e um valor monetário nela
+    for (var i = 0; i < linhas.length; i++) {
+      if (palavrasChaveTotal.test(linhas[i])) {
+        var valores = linhas[i].match(regexValor);
+        if (valores && valores.length) {
+          var v = parseValorMonetarioBR(valores[valores.length - 1]);
+          if (!isNaN(v)) return v;
+        }
+        // às vezes o valor cai na linha seguinte
+        if (linhas[i + 1]) {
+          var valoresProx = linhas[i + 1].match(regexValor);
+          if (valoresProx && valoresProx.length) {
+            var v2 = parseValorMonetarioBR(valoresProx[0]);
+            if (!isNaN(v2)) return v2;
+          }
+        }
+      }
+    }
+
+    // 2) sem palavra-chave encontrada: usa o maior valor monetário do texto (geralmente é o total)
+    var todosValores = texto.match(regexValor);
+    if (todosValores && todosValores.length) {
+      var numeros = todosValores.map(parseValorMonetarioBR).filter(function(n) { return !isNaN(n); });
+      if (numeros.length) return Math.max.apply(null, numeros);
+    }
+    return null;
+  }
+
+  // Tenta localizar a descrição do(s) produto(s)/serviço(s) no texto reconhecido pelo OCR.
+  // Estratégia: no DANFE, a tabela de itens costuma vir logo após o cabeçalho
+  // "DESCRIÇÃO DO PRODUTO/SERVIÇO" e termina antes de seções como "CÁLCULO DO
+  // IMPOSTO", "DADOS ADICIONAIS" etc. Extrai as linhas de item dessa faixa e
+  // remove códigos/valores numéricos que normalmente cercam a descrição.
+  function extrairDescricaoNF(texto) {
+    var linhas = String(texto).split(/\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+
+    var regexInicio = /descri[çc][ãa]o\s*(?:do|dos)?\s*produto/i;
+    var regexFim = /c[áa]lculo\s*do\s*imposto|dados\s*adicionais|informa[çc][õo]es?\s*complementares|reservado\s*ao\s*fisco|forma\s*de\s*pagamento|c[áa]lculo\s*do\s*issqn/i;
+
+    var inicioIdx = -1;
+    for (var i = 0; i < linhas.length; i++) {
+      if (regexInicio.test(linhas[i])) { inicioIdx = i + 1; break; }
+    }
+
+    var itens = [];
+    if (inicioIdx !== -1) {
+      var fimIdx = linhas.length;
+      for (var j = inicioIdx; j < linhas.length; j++) {
+        if (regexFim.test(linhas[j])) { fimIdx = j; break; }
+      }
+      var regexPalavraCodigo = /^[\d.,%\/-]+$/;   // palavra formada só por números/pontuação (NCM, CFOP, qtd, valores)
+      var regexPalavraUnidade = /^[A-Z]{1,3}$/;    // sigla curta de unidade (UN, KG, CX, PC...)
+      for (var k = inicioIdx; k < fimIdx && k < inicioIdx + 15; k++) {
+        var linha = linhas[k];
+        if (linha.length < 4) continue;
+        if (regexPalavraCodigo.test(linha.replace(/\s+/g, ''))) continue; // linha só com números/códigos
+
+        var palavras = linha.replace(/^\d{6,}\s*/, '').trim().split(/\s+/); // remove código de barras/produto no início
+        while (palavras.length > 2) {
+          var ultima = palavras[palavras.length - 1];
+          if (regexPalavraCodigo.test(ultima) || regexPalavraUnidade.test(ultima)) {
+            palavras.pop();
+          } else {
+            break;
+          }
+        }
+        var limpa = palavras.join(' ').trim();
+        if (limpa.length >= 4) itens.push(limpa);
+      }
+    }
+
+    if (!itens.length) return null;
+    var descricao = itens.join('; ');
+    if (descricao.length > 200) descricao = descricao.slice(0, 197) + '...';
+    return descricao;
+  }
+
+  document.getElementById('nnf-ler-auto').addEventListener('click', async function() {
+    var arquivo = document.getElementById('nnf-arquivo').files[0];
+    var statusEl = document.getElementById('nnf-ocr-status');
+    var botao = document.getElementById('nnf-ler-auto');
+
+    if (!arquivo) {
+      alert('Selecione uma foto ou PDF da NF primeiro.');
+      return;
+    }
+    if (!window.Tesseract || !window.pdfjsLib) {
+      alert('Não foi possível carregar o leitor de NF. Verifique sua conexão com a internet e tente novamente.');
+      return;
+    }
+
+    botao.disabled = true;
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--text-muted)';
+    statusEl.innerHTML = 'Preparando arquivo...';
+
+    try {
+      var fonteImagem;
+      if (arquivo.type === 'application/pdf') {
+        fonteImagem = await converterPdfEmImagem(arquivo);
+      } else {
+        fonteImagem = arquivo;
+      }
+
+      statusEl.innerHTML = 'Lendo o texto da NF... 0%';
+
+      var resultado = await Tesseract.recognize(fonteImagem, 'por', {
+        logger: function(info) {
+          if (info.status === 'recognizing text') {
+            statusEl.innerHTML = 'Lendo o texto da NF... ' + Math.round(info.progress * 100) + '%';
+          }
+        },
+      });
+
+      var texto = resultado.data.text || '';
+      var numeroEncontrado = extrairNumeroNF(texto);
+      var valorEncontrado = extrairValorNF(texto);
+      var descricaoEncontrada = extrairDescricaoNF(texto);
+
+      var encontrados = [];
+      if (numeroEncontrado) {
+        document.getElementById('nnf-numero').value = numeroEncontrado;
+        encontrados.push('número ' + numeroEncontrado);
+      }
+      if (descricaoEncontrada) {
+        document.getElementById('nnf-descricao').value = descricaoEncontrada;
+        encontrados.push('descrição');
+      }
+      if (valorEncontrado !== null) {
+        document.getElementById('nnf-valor').value = valorEncontrado.toFixed(2);
+        encontrados.push('valor ' + formatarMoeda(valorEncontrado));
+      }
+
+      if (encontrados.length) {
+        statusEl.style.color = 'var(--teal)';
+        statusEl.innerHTML = 'Encontrado: ' + encontrados.join(' e ') + '. Confira os campos antes de salvar.';
+      } else {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.innerHTML = 'Não foi possível identificar o número ou o valor automaticamente. Preencha manualmente.';
+      }
+    } catch (erro) {
+      console.error('Erro ao ler NF automaticamente:', erro);
+      statusEl.style.color = 'var(--danger)';
+      statusEl.innerHTML = 'Falha ao ler o arquivo. Preencha os campos manualmente.';
+    } finally {
+      botao.disabled = false;
+    }
+  });
+  function fecharModalNota() {
+    document.getElementById('modal-nf-overlay').classList.remove('open');
+  }
+  document.getElementById('btn-nova-nf').addEventListener('click', abrirModalNota);
+  document.getElementById('modal-nf-close').addEventListener('click', fecharModalNota);
+  document.getElementById('modal-nf-cancel').addEventListener('click', fecharModalNota);
+  document.getElementById('modal-nf-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-nf-overlay')) fecharModalNota();
+  });
+
+  document.getElementById('modal-nf-save').addEventListener('click', async function() {
+    var numero = document.getElementById('nnf-numero').value.trim();
+    var data = document.getElementById('nnf-data').value;
+    var descricao = document.getElementById('nnf-descricao').value.trim();
+    var valor = parseFloat(document.getElementById('nnf-valor').value);
+
+    if (!numero) { alert('Informe o número da NF.'); return; }
+    if (!data) { alert('Selecione a data da NF.'); return; }
+    if (isNaN(valor) || valor < 0) { alert('Informe um valor válido.'); return; }
+
+    var botao = document.getElementById('modal-nf-save');
+    botao.disabled = true;
+
+    var resultado = await db.from('notas_fiscais').insert({ numero: numero, data: data, descricao: descricao || null, valor: valor });
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao registrar NF no Supabase:', resultado.error);
+      alert('Não foi possível salvar a nota fiscal. Verifique se a tabela "notas_fiscais" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    fecharModalNota();
+    await carregarNotas();
+    mostrarToast('Nota fiscal registrada.');
+  });
+
+  async function excluirNota(nf) {
+    var confirmar = confirm('Tem certeza que deseja excluir a NF nº ' + nf.numero + '? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('notas_fiscais').delete().eq('id', nf.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir NF:', resultado.error);
+      alert('Não foi possível excluir a nota fiscal. Tente novamente.');
+      return;
+    }
+    await carregarNotas();
+    mostrarToast('Nota fiscal excluída.');
+  }
+
+  function atualizarKpisRecursos() {
+    var kpiRecebido = document.getElementById('kpi-recursos-recebido');
+    var kpiNotas = document.getElementById('kpi-recursos-notas');
+    var kpiSaldo = document.getElementById('kpi-recursos-saldo');
+    if (!kpiRecebido) return;
+
+    var totalRecebido = APORTES.reduce(function(soma, a) { return soma + (Number(a.valor) || 0); }, 0);
+    var totalNotas = NOTAS.reduce(function(soma, n) { return soma + (Number(n.valor) || 0); }, 0);
+
+    kpiRecebido.textContent = formatarMoeda(totalRecebido);
+    kpiNotas.textContent = formatarMoeda(totalNotas);
+    kpiSaldo.textContent = formatarMoeda(totalRecebido - totalNotas);
+  }
+
+  // Gera um PDF com a lista de notas fiscais registradas
+  function baixarNotasFiscaisPdf() {
+    if (!NOTAS.length) {
+      alert('Não há notas fiscais para incluir no PDF.');
+      return;
+    }
+
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) {
+      alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet e tente novamente.');
+      return;
+    }
+
+    var doc = new jsPDFCtor({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('Notas fiscais', 40, 40);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Gerado em ' + new Date().toLocaleString('pt-BR'), 40, 58);
+
+    var linhas = NOTAS.map(function(n) {
+      return [n.numero, formatarData(n.data), n.descricao || '—', formatarMoeda(n.valor)];
+    });
+
+    var totalNotas = NOTAS.reduce(function(soma, n) { return soma + (Number(n.valor) || 0); }, 0);
+
+    doc.autoTable({
+      startY: 74,
+      margin: { left: 40, right: 40 },
+      head: [['Nº NF', 'Data', 'Descrição', 'Valor']],
+      body: linhas,
+      foot: [['', '', 'Total', formatarMoeda(totalNotas)]],
+      styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
+      headStyles: { fillColor: [17, 34, 64] },
+      footStyles: { fillColor: [245, 247, 250], textColor: [17, 34, 64], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
+
+    doc.save('notas-fiscais-' + hojeISO() + '.pdf');
+  }
+  document.getElementById('btn-gerar-pdf-nf').addEventListener('click', baixarNotasFiscaisPdf);
+
   // ===== Excluir vaga =====
   async function excluirVaga(vaga) {
     if (!souAdmin()) {
@@ -4474,6 +5426,10 @@
     await carregarAcolhidos();
     await carregarAtividadesRecentes();
     await carregarDoacoes();
+    await carregarEstoque();
+    await carregarCompras();
+    await carregarAportes();
+    await carregarNotas();
   }
 
   var USUARIO_ATUAL = null; // sessão do Supabase Auth
