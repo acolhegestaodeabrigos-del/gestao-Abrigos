@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -252,7 +253,7 @@
   /* Tela de login */
   .login-screen {
     position: fixed; inset: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
     padding: 20px;
   }
@@ -276,6 +277,48 @@
   }
   .login-submit { width: 100%; justify-content: center; }
   .login-hint { font-size: 12px; color: var(--text-muted); margin: 16px 0 0; text-align: center; }
+
+  .meditacao-dia {
+    width: 100%; max-width: 380px; margin-top: 18px;
+    padding: 16px 20px; border-radius: 14px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+    text-align: center;
+  }
+  .meditacao-label {
+    margin: 0 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: rgba(255,255,255,0.65);
+  }
+  .meditacao-texto {
+    margin: 0; font-size: 13.5px; font-style: italic; line-height: 1.5;
+    color: rgba(255,255,255,0.92);
+  }
+
+  /* ===== Tela de Início de Plantão (obrigatória após login) ===== */
+  .plantao-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    padding: 20px;
+  }
+  .plantao-card {
+    width: 100%; max-width: 460px; background: var(--surface);
+    border-radius: 16px; padding: 32px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    max-height: 92vh; overflow-y: auto;
+  }
+  .plantao-lista {
+    display: flex; flex-direction: column; gap: 8px;
+    margin: 4px 0 18px; max-height: 260px; overflow-y: auto; padding-right: 2px;
+  }
+  .plantao-membro {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    font-size: 13.5px; font-weight: 500;
+  }
+  .plantao-membro:hover { background: var(--bg); }
+  .plantao-membro.selecionado { border-color: var(--teal); background: var(--teal-light); }
+  .plantao-membro input { accent-color: var(--navy); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+  .plantao-membro-cargo { color: var(--text-muted); font-size: 11.5px; margin-left: auto; white-space: nowrap; }
+  .plantao-contagem { font-size: 12px; color: var(--text-muted); margin: 0 0 4px; }
 
   @media (max-width: 980px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -650,6 +693,35 @@
     </form>
     <p class="login-hint">Acesso restrito. Fale com o administrador do sistema caso ainda não tenha uma conta.</p>
   </div>
+  <div class="meditacao-dia" id="meditacao-dia">
+    <p class="meditacao-label">Reflexão do dia</p>
+    <p class="meditacao-texto" id="meditacao-texto">—</p>
+  </div>
+</div>
+
+<!-- Tela obrigatória de início de plantão, exibida após o login quando ainda não há plantão registrado hoje -->
+<div class="plantao-screen" id="plantao-screen" style="display:none;">
+  <div class="plantao-card">
+    <div class="login-logo-row">
+      <div class="login-logo-box">A</div>
+      <div>
+        <p class="login-title">Início de plantão</p>
+        <p class="login-subtitle" id="plantao-data-label">—</p>
+      </div>
+    </div>
+    <p class="content-subtitle" style="margin:0 0 2px;">Quem está no plantão agora?</p>
+    <p class="plantao-contagem">Marque todos os membros da equipe presentes.</p>
+    <div class="plantao-lista" id="plantao-lista">
+      <p class="content-subtitle">Carregando equipe...</p>
+    </div>
+    <div class="form-field">
+      <label class="form-label" for="plantao-observacao">Observação recebida do plantão anterior (opcional)</label>
+      <textarea class="form-textarea" id="plantao-observacao" placeholder="Ex: acolhido X com febre, revisar medicação às 14h..."></textarea>
+    </div>
+    <p class="login-erro" id="plantao-erro" style="display:none;"></p>
+    <button type="button" class="btn-save login-submit" id="plantao-iniciar-btn">Iniciar plantão</button>
+    <p class="login-hint">Isso registra quem está de plantão agora. Fica salvo no histórico do sistema.</p>
+  </div>
 </div>
 
 <div class="app" id="app-root" style="display:none;">
@@ -709,7 +781,7 @@
           <p class="user-name" id="sidebar-user-name">Equipe Técnica</p>
           <p class="user-role" id="sidebar-user-role">Casa de Acolhida</p>
         </div>
-        <button class="icon-btn" id="btn-logout" title="Sair" aria-label="Sair" style="margin-left:auto;">
+        <button class="icon-btn" id="btn-logout" title="Encerrar plantão e sair" aria-label="Encerrar plantão e sair" style="margin-left:auto;">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
@@ -839,6 +911,17 @@
         </div>
 
         <div class="stack">
+          <!-- Plantão do dia -->
+          <div class="card">
+            <div class="card-header-row">
+              <p class="card-title">Plantão de hoje</p>
+              <button type="button" class="btn-secondary-sm" id="btn-encerrar-plantao" style="display:none;">Encerrar plantão</button>
+            </div>
+            <div id="plantao-hoje-conteudo">
+              <p class="content-subtitle" style="margin:0;">Carregando...</p>
+            </div>
+          </div>
+
           <!-- Alerts -->
           <div class="card">
             <div class="alert-header">
@@ -1481,6 +1564,29 @@
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-desligar-cancel">Cancelar</button>
       <button class="btn-save" id="modal-desligar-confirm" style="background:var(--danger);">Confirmar desligamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Encerrar plantão -->
+<div class="modal-overlay" id="modal-encerrar-plantao-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Encerrar plantão</h3>
+      <button class="drawer-close" id="modal-encerrar-plantao-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="content-subtitle" style="margin-bottom:14px;">Ao encerrar, o plantão atual será fechado. A próxima equipe precisará iniciar um novo plantão para acessar o sistema.</p>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="encerrar-plantao-observacao">Observação para a próxima equipe (opcional)</label>
+        <textarea class="form-textarea" id="encerrar-plantao-observacao" rows="4" placeholder="Ex: acolhido X com febre, revisar medicação às 14h..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-encerrar-plantao-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-encerrar-plantao-confirm">Confirmar encerramento</button>
     </div>
   </div>
 </div>
@@ -5430,9 +5536,262 @@
     await carregarCompras();
     await carregarAportes();
     await carregarNotas();
+    await carregarPlantaoHoje();
   }
 
+  // Verifica se já existe um plantão registrado hoje. Se sim, entra direto no painel.
+  // Se não, exige que o usuário selecione quem está no plantão antes de liberar o acesso.
+  // forcarNovoPlantao = true quando o login é feito manualmente pelo formulário (ou seja,
+  // a pessoa acabou de digitar email/senha agora). Nesse caso, sempre exigimos a seleção
+  // da equipe novamente, mesmo que por algum motivo ainda exista um plantão "aberto" no banco.
+  // Quando é apenas uma sessão já ativa sendo restaurada (ex: recarregar a página no meio do
+  // plantão), forcarNovoPlantao é false e, se o plantão ainda estiver aberto, o acesso ao
+  // painel é retomado direto, sem pedir a equipe de novo.
+  async function verificarPlantaoEEntrar(forcarNovoPlantao) {
+    var resultado = await db.from('plantoes').select('id, status').order('criado_em', { ascending: false }).limit(1);
+
+    if (resultado.error) {
+      console.error('Erro ao verificar plantão atual:', resultado.error);
+      // Em caso de erro na verificação, não bloqueia o acesso ao painel.
+      mostrarApp();
+      await iniciarApp();
+      return;
+    }
+
+    var ultimoPlantao = resultado.data && resultado.data[0];
+
+    // Só libera acesso direto se existir um plantão, ele ainda estiver aberto (não encerrado)
+    // e não estivermos vindo de um login manual (formulário). Assim, um plantão que atravessa
+    // a meia-noite continua valendo numa sessão já ativa, mas todo novo login exige informar
+    // a equipe novamente.
+    if (!forcarNovoPlantao && ultimoPlantao && ultimoPlantao.status !== 'encerrado') {
+      PLANTAO_ATUAL_ID = ultimoPlantao.id;
+      mostrarApp();
+      await iniciarApp();
+      return;
+    }
+
+    await abrirTelaInicioPlantao();
+  }
+
+  // Monta a lista de membros ativos da equipe para o usuário marcar quem está presente hoje
+  async function abrirTelaInicioPlantao() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display = 'none';
+    document.getElementById('plantao-screen').style.display = 'flex';
+    document.getElementById('plantao-data-label').textContent = dataBr(hojeISO());
+    document.getElementById('plantao-observacao').value = '';
+    document.getElementById('plantao-erro').style.display = 'none';
+
+    // Busca a observação de encerramento do último plantão fechado, repassando-a automaticamente para a equipe que está entrando
+    var ultimoEncerrado = await db
+      .from('plantoes')
+      .select('observacao_encerramento')
+      .eq('status', 'encerrado')
+      .order('encerrado_em', { ascending: false })
+      .limit(1);
+    if (!ultimoEncerrado.error && ultimoEncerrado.data && ultimoEncerrado.data.length > 0 && ultimoEncerrado.data[0].observacao_encerramento) {
+      document.getElementById('plantao-observacao').value = ultimoEncerrado.data[0].observacao_encerramento;
+    }
+
+    var listaEl = document.getElementById('plantao-lista');
+    listaEl.innerHTML = '<p class="content-subtitle">Carregando equipe...</p>';
+
+    var resultado = await db.from('equipe').select('id, nome_completo, cargo').eq('ativo', true).order('nome_completo');
+
+    if (resultado.error) {
+      console.error('Erro ao carregar equipe para início de plantão:', resultado.error);
+      listaEl.innerHTML = '<p class="content-subtitle">Não foi possível carregar a equipe. Recarregue a página.</p>';
+      return;
+    }
+
+    if (!resultado.data || resultado.data.length === 0) {
+      listaEl.innerHTML = '<p class="content-subtitle">Nenhum membro ativo cadastrado. Peça a um administrador para cadastrar a equipe antes de iniciar o plantão.</p>';
+      return;
+    }
+
+    listaEl.innerHTML = resultado.data.map(function(m) {
+      return '' +
+        '<label class="plantao-membro" data-id="' + m.id + '">' +
+          '<input type="checkbox" value="' + m.id + '" />' +
+          '<span>' + esc(m.nome_completo) + '</span>' +
+          '<span class="plantao-membro-cargo">' + esc(CARGO_LABEL[m.cargo] || m.cargo || '') + '</span>' +
+        '</label>';
+    }).join('');
+
+    listaEl.querySelectorAll('.plantao-membro').forEach(function(label) {
+      var checkbox = label.querySelector('input');
+      label.addEventListener('click', function(e) {
+        if (e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+        }
+        label.classList.toggle('selecionado', checkbox.checked);
+      });
+    });
+  }
+
+  document.getElementById('plantao-iniciar-btn').addEventListener('click', async function() {
+    var selecionados = Array.prototype.slice.call(document.querySelectorAll('#plantao-lista input:checked')).map(function(cb) { return cb.value; });
+    var observacao = document.getElementById('plantao-observacao').value.trim();
+    var erroEl = document.getElementById('plantao-erro');
+    var botao = document.getElementById('plantao-iniciar-btn');
+
+    if (selecionados.length === 0) {
+      erroEl.textContent = 'Selecione ao menos um membro da equipe presente no plantão.';
+      erroEl.style.display = 'block';
+      return;
+    }
+    erroEl.style.display = 'none';
+    botao.disabled = true;
+    botao.textContent = 'Iniciando...';
+
+    var criacao = await db.from('plantoes').insert({
+      data: hojeISO(),
+      iniciado_por: USUARIO_ATUAL ? USUARIO_ATUAL.id : null,
+      observacao: observacao || null,
+      status: 'aberto'
+    }).select().single();
+
+    if (criacao.error || !criacao.data) {
+      console.error('Erro ao iniciar plantão:', criacao.error);
+      erroEl.textContent = 'Não foi possível iniciar o plantão. Tente novamente.';
+      erroEl.style.display = 'block';
+      botao.disabled = false;
+      botao.textContent = 'Iniciar plantão';
+      return;
+    }
+
+    PLANTAO_ATUAL_ID = criacao.data.id;
+
+    var membrosParaInserir = selecionados.map(function(id) {
+      return { plantao_id: criacao.data.id, equipe_id: id };
+    });
+    var membrosResultado = await db.from('plantao_membros').insert(membrosParaInserir);
+
+    botao.disabled = false;
+    botao.textContent = 'Iniciar plantão';
+
+    if (membrosResultado.error) {
+      console.error('Erro ao salvar membros do plantão:', membrosResultado.error);
+      erroEl.textContent = 'O plantão foi criado, mas houve um problema ao salvar a equipe presente. Fale com o suporte.';
+      erroEl.style.display = 'block';
+      return;
+    }
+
+    document.getElementById('plantao-screen').style.display = 'none';
+    mostrarApp();
+    await iniciarApp();
+    mostrarToast('Plantão iniciado com ' + selecionados.length + ' membro(s) da equipe.');
+  });
+
+  // Mostra na Dashboard quem está no plantão de hoje e a observação recebida do plantão anterior
+  async function carregarPlantaoHoje() {
+    var el = document.getElementById('plantao-hoje-conteudo');
+    var btnEncerrar = document.getElementById('btn-encerrar-plantao');
+    if (!el) return;
+
+    var resultado = await db
+      .from('plantoes')
+      .select('id, observacao, status, observacao_encerramento, criado_em, plantao_membros(equipe(nome_completo))')
+      .order('criado_em', { ascending: false })
+      .limit(1);
+
+    if (resultado.error) {
+      console.error('Erro ao carregar plantão de hoje:', resultado.error);
+      el.innerHTML = '<p class="content-subtitle" style="margin:0;">Não foi possível carregar o plantão de hoje.</p>';
+      if (btnEncerrar) btnEncerrar.style.display = 'none';
+      return;
+    }
+
+    if (!resultado.data || resultado.data.length === 0) {
+      el.innerHTML = '<p class="content-subtitle" style="margin:0;">Nenhum plantão iniciado ainda.</p>';
+      if (btnEncerrar) btnEncerrar.style.display = 'none';
+      return;
+    }
+
+    var plantao = resultado.data[0];
+    var aberto = plantao.status !== 'encerrado';
+    PLANTAO_ATUAL_ID = aberto ? plantao.id : null;
+    if (btnEncerrar) btnEncerrar.style.display = aberto ? '' : 'none';
+
+    var nomes = (plantao.plantao_membros || [])
+      .map(function(pm) { return pm.equipe ? pm.equipe.nome_completo : null; })
+      .filter(Boolean);
+
+    var statusHtml = aberto
+      ? '<span class="status-badge status-ativo">Aberto</span>'
+      : '<span class="status-badge status-desligado">Encerrado</span>';
+
+    var html = '<p style="font-size:13px; margin:0 0 8px; display:flex; align-items:center; justify-content:space-between; gap:8px;">' +
+      '<span><strong>' + nomes.length + '</strong> na equipe: ' + esc(nomes.join(', ') || '—') + '</span>' + statusHtml +
+      '</p>';
+    if (plantao.observacao) {
+      html += '<p class="content-subtitle" style="margin:0 0 8px; padding:8px 10px; background:var(--amber-light); border-radius:8px; color:#8A5A12;">Recebido: ' + esc(plantao.observacao) + '</p>';
+    }
+    if (!aberto && plantao.observacao_encerramento) {
+      html += '<p class="content-subtitle" style="margin:0; padding:8px 10px; background:#EEF0F2; border-radius:8px; color:var(--text-muted);">Encerramento: ' + esc(plantao.observacao_encerramento) + '</p>';
+    }
+    el.innerHTML = html;
+  }
+
+  document.getElementById('btn-encerrar-plantao').addEventListener('click', function() {
+    document.getElementById('encerrar-plantao-observacao').value = '';
+    document.getElementById('modal-encerrar-plantao-overlay').classList.add('open');
+  });
+
+  function fecharModalEncerrarPlantao() {
+    document.getElementById('modal-encerrar-plantao-overlay').classList.remove('open');
+  }
+  document.getElementById('modal-encerrar-plantao-close').addEventListener('click', fecharModalEncerrarPlantao);
+  document.getElementById('modal-encerrar-plantao-cancel').addEventListener('click', fecharModalEncerrarPlantao);
+  document.getElementById('modal-encerrar-plantao-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-encerrar-plantao-overlay')) fecharModalEncerrarPlantao();
+  });
+
+  document.getElementById('modal-encerrar-plantao-confirm').addEventListener('click', async function() {
+    if (!PLANTAO_ATUAL_ID) {
+      alert('Nenhum plantão em aberto foi encontrado.');
+      return;
+    }
+    var observacao = document.getElementById('encerrar-plantao-observacao').value.trim();
+    var botao = this;
+    botao.disabled = true;
+    botao.textContent = 'Encerrando...';
+
+    var resultado = await db.from('plantoes').update({
+      status: 'encerrado',
+      encerrado_em: new Date().toISOString(),
+      encerrado_por: USUARIO_ATUAL ? USUARIO_ATUAL.id : null,
+      observacao_encerramento: observacao || null,
+    }).eq('id', PLANTAO_ATUAL_ID);
+
+    botao.disabled = false;
+    botao.textContent = 'Confirmar encerramento';
+
+    if (resultado.error) {
+      console.error('Erro ao encerrar plantão:', resultado.error);
+      alert('Não foi possível encerrar o plantão. Tente novamente.');
+      return;
+    }
+
+    await registrarAtividade('encerramento_plantao', 'Plantão encerrado.' + (observacao ? ' Obs: ' + observacao : ''));
+
+    fecharModalEncerrarPlantao();
+    PLANTAO_ATUAL_ID = null;
+
+    // Encerrar o plantão sempre desloga o usuário e volta para a tela de login.
+    // A próxima equipe precisa fazer login e iniciar um novo plantão para acessar o sistema.
+    await db.auth.signOut();
+    USUARIO_ATUAL = null;
+    PERFIL_ATUAL = null;
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-senha').value = '';
+    mostrarToast('Plantão encerrado. Até o próximo turno!');
+    mostrarLogin();
+  });
+
   var USUARIO_ATUAL = null; // sessão do Supabase Auth
+  var PLANTAO_ATUAL_ID = null; // id do plantão em aberto no momento (null quando encerrado)
   var PERFIL_ATUAL = null;  // { nome_completo, role } vindo da tabela "perfis"
 
   function souAdmin() {
@@ -5443,6 +5802,9 @@
   function aplicarRestricoesPerfil() {
     var navEquipe = document.querySelector('.nav-item[data-page="Equipe"]');
     if (navEquipe) navEquipe.style.display = souAdmin() ? '' : 'none';
+
+    var navCoordenacao = document.querySelector('.nav-item[data-page="Coordenação"]');
+    if (navCoordenacao) navCoordenacao.style.display = souAdmin() ? '' : 'none';
 
     var navLogins = document.getElementById('nav-gerenciar-logins');
     if (navLogins) navLogins.style.display = souAdmin() ? '' : 'none';
@@ -5471,9 +5833,56 @@
     if (statusEl) statusEl.disabled = !souAdmin();
   }
 
+  // Uma reflexão para cada dia do mês (1 a 31), exibida na tela de login.
+  // O índice usado é o dia do mês atual, então ela muda naturalmente todo dia
+  // e "gira" de novo a cada novo mês.
+  var MEDITACOES_DIA = [
+    'Respire fundo. Cada gesto de cuidado que você oferece hoje já é suficiente.',
+    'Você não precisa ser perfeito(a) para ser presente. Presença já é cuidado.',
+    'Um dia de cada vez. Um acolhimento de cada vez.',
+    'Cuidar de quem cuida também é um ato de cuidado.',
+    'A escuta silenciosa muitas vezes fala mais alto que qualquer palavra.',
+    'Pequenos gestos de gentileza constroem grandes mudanças.',
+    'Você é parte de uma rede que sustenta vidas. Reconheça o seu valor hoje.',
+    'Nem tudo se resolve hoje, e está tudo bem. Faça o que está ao seu alcance.',
+    'Antes de cuidar do outro, dê um momento de gentileza a si mesmo(a).',
+    'A paciência é uma forma silenciosa de amor.',
+    'Cada pessoa acolhida carrega uma história. Honre-a com respeito.',
+    'Descanse quando precisar. Você também merece cuidado.',
+    'O acolhimento começa com um olhar atento e sem julgamento.',
+    'Hoje, permita-se respirar antes de reagir.',
+    'Fazer a diferença começa com estar presente, mesmo nos dias difíceis.',
+    'Confie no processo. Nem todo fruto se colhe no mesmo dia em que se planta.',
+    'Sua dedicação, mesmo nos pequenos detalhes, não passa despercebida.',
+    'Escutar sem pressa é um dos maiores presentes que podemos dar.',
+    'Você não está sozinho(a) nessa jornada de cuidado.',
+    'Gentileza é uma linguagem que todos entendem, mesmo em silêncio.',
+    'Cuidar exige força e delicadeza ao mesmo tempo. Você tem as duas.',
+    'Reserve um instante hoje só para respirar e se centrar.',
+    'Toda ajuda genuína começa com empatia, não com pressa.',
+    'Celebre as pequenas vitórias do dia, elas também importam.',
+    'A sua presença tranquila pode ser o porto seguro de alguém hoje.',
+    'Erros acontecem. O que importa é continuar cuidando com atenção.',
+    'Compaixão começa dentro de você, antes de se estender aos outros.',
+    'Um sorriso sincero pode aliviar o dia inteiro de alguém.',
+    'Cuidar do outro também é um convite para cuidar de si.',
+    'Confie na sua capacidade de acolher, mesmo diante do imprevisto.',
+    'Feche o dia sabendo que você fez a diferença possível hoje.'
+  ];
+
+  // Mostra a reflexão correspondente ao dia do mês atual na tela de login.
+  function exibirMeditacaoDoDia() {
+    var el = document.getElementById('meditacao-texto');
+    if (!el) return;
+    var dia = new Date().getDate(); // 1 a 31
+    var indice = (dia - 1) % MEDITACOES_DIA.length;
+    el.textContent = MEDITACOES_DIA[indice];
+  }
+
   function mostrarLogin(mensagemErro) {
     document.getElementById('app-root').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
+    exibirMeditacaoDoDia();
     var erroEl = document.getElementById('login-erro');
     if (mensagemErro) {
       erroEl.textContent = mensagemErro;
@@ -5488,8 +5897,10 @@
     document.getElementById('app-root').style.display = 'flex';
   }
 
-  // Busca o perfil (nome + papel) do usuário logado na tabela "perfis" e libera o acesso ao app
-  async function carregarPerfilEEntrar(usuario) {
+  // Busca o perfil (nome + papel) do usuário logado na tabela "perfis" e libera o acesso ao app.
+  // forcarNovoPlantao: true quando vem de um login manual (formulário), exigindo sempre a
+  // seleção da equipe; false/omitido quando é a restauração automática de uma sessão já ativa.
+  async function carregarPerfilEEntrar(usuario, forcarNovoPlantao) {
     USUARIO_ATUAL = usuario;
 
     var resultado = await db.from('perfis').select('nome_completo, role').eq('id', usuario.id).single();
@@ -5502,9 +5913,8 @@
     }
 
     PERFIL_ATUAL = resultado.data;
-    mostrarApp();
     aplicarRestricoesPerfil();
-    await iniciarApp();
+    await verificarPlantaoEEntrar(forcarNovoPlantao);
   }
 
   document.getElementById('login-form').addEventListener('submit', async function(e) {
@@ -5527,18 +5937,15 @@
       return;
     }
 
-    await carregarPerfilEEntrar(resultado.data.user);
+    await carregarPerfilEEntrar(resultado.data.user, true);
   });
 
-  document.getElementById('btn-logout').addEventListener('click', async function() {
-    var confirmar = confirm('Deseja realmente sair do sistema?');
-    if (!confirmar) return;
-    await db.auth.signOut();
-    USUARIO_ATUAL = null;
-    PERFIL_ATUAL = null;
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-senha').value = '';
-    mostrarLogin();
+  // O logout só é permitido através do encerramento do plantão: ao clicar em "Sair",
+  // abrimos o mesmo modal de "Encerrar plantão". Não existe mais uma opção de sair
+  // sem encerrar o plantão em aberto.
+  document.getElementById('btn-logout').addEventListener('click', function() {
+    document.getElementById('encerrar-plantao-observacao').value = '';
+    document.getElementById('modal-encerrar-plantao-overlay').classList.add('open');
   });
 
   // ===== Gerenciar Logins (somente admin) =====
