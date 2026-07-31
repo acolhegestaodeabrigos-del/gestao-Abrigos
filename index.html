@@ -5566,6 +5566,7 @@
     // a equipe novamente.
     if (!forcarNovoPlantao && ultimoPlantao && ultimoPlantao.status !== 'encerrado') {
       PLANTAO_ATUAL_ID = ultimoPlantao.id;
+      marcarPlantaoConfirmadoNestaSessao();
       mostrarApp();
       await iniciarApp();
       return;
@@ -5679,6 +5680,7 @@
     }
 
     document.getElementById('plantao-screen').style.display = 'none';
+    marcarPlantaoConfirmadoNestaSessao();
     mostrarApp();
     await iniciarApp();
     mostrarToast('Plantão iniciado com ' + selecionados.length + ' membro(s) da equipe.');
@@ -5778,6 +5780,7 @@
 
     fecharModalEncerrarPlantao();
     PLANTAO_ATUAL_ID = null;
+    limparPlantaoConfirmadoNestaSessao();
 
     // Encerrar o plantão sempre desloga o usuário e volta para a tela de login.
     // A próxima equipe precisa fazer login e iniciar um novo plantão para acessar o sistema.
@@ -5793,6 +5796,23 @@
   var USUARIO_ATUAL = null; // sessão do Supabase Auth
   var PLANTAO_ATUAL_ID = null; // id do plantão em aberto no momento (null quando encerrado)
   var PERFIL_ATUAL = null;  // { nome_completo, role } vindo da tabela "perfis"
+
+  // Controla, apenas nesta aba do navegador (sessionStorage), se a seleção da equipe
+  // do "Início de plantão" já foi confirmada. Isso evita que um simples recarregamento
+  // de página, feito enquanto o usuário ainda está na tela de seleção da equipe, pule
+  // essa etapa só porque já existe algum plantão "aberto" no banco (ex: aberto em outro
+  // dispositivo/login). Um reload feito DEPOIS de confirmar a equipe continua entrando
+  // direto no painel normalmente, como já acontecia.
+  var PLANTAO_CONFIRMADO_KEY = 'acolhe_plantao_confirmado_sessao';
+  function marcarPlantaoConfirmadoNestaSessao() {
+    try { sessionStorage.setItem(PLANTAO_CONFIRMADO_KEY, '1'); } catch (e) {}
+  }
+  function plantaoConfirmadoNestaSessao() {
+    try { return sessionStorage.getItem(PLANTAO_CONFIRMADO_KEY) === '1'; } catch (e) { return false; }
+  }
+  function limparPlantaoConfirmadoNestaSessao() {
+    try { sessionStorage.removeItem(PLANTAO_CONFIRMADO_KEY); } catch (e) {}
+  }
 
   function souAdmin() {
     return !!(PERFIL_ATUAL && PERFIL_ATUAL.role === 'admin');
@@ -6439,7 +6459,11 @@
     var resultado = await db.auth.getSession();
     var sessao = resultado.data ? resultado.data.session : null;
     if (sessao && sessao.user) {
-      await carregarPerfilEEntrar(sessao.user);
+      // Só permite retomar o painel direto se ESTA aba já tiver confirmado a seleção
+      // da equipe antes (via marcarPlantaoConfirmadoNestaSessao). Caso contrário, mesmo
+      // com um plantão "aberto" existindo no banco, força a exibição da tela de
+      // "Início de plantão" novamente, para não pular a confirmação da equipe presente.
+      await carregarPerfilEEntrar(sessao.user, !plantaoConfirmadoNestaSessao());
     } else {
       mostrarLogin();
     }
