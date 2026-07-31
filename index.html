@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -459,7 +458,48 @@
   .cat-nao_perecivel { background: var(--teal-light); color: #1F6B67; }
   .cat-bebida { background: #E4ECFB; color: #2C4E8A; }
   .cat-limpeza { background: var(--amber-light); color: #8A5A12; }
+  .cat-saude { background: var(--teal-light); color: #1F6B67; }
+  .cat-esportes { background: var(--amber-light); color: #8A5A12; }
+  .cat-tecnologia { background: #E4ECFB; color: #2C4E8A; }
+  .cat-vicios { background: var(--danger-light); color: #9A3F35; }
+  .cat-cursos { background: #F3E8F5; color: #7A3E85; }
   .row-arrow { color: var(--text-muted); }
+
+  /* Sub-abas dentro de uma página (ex.: Acolhidos / Oficinas) */
+  .page-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .page-tab {
+    padding: 10px 4px; margin-bottom: -1px; border: none; background: none; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+  }
+  .page-tab + .page-tab { margin-left: 14px; }
+  .page-tab:hover { color: var(--text); }
+  .page-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .subpage { display: none; }
+  .subpage.active { display: block; }
+
+  /* Galeria de oficinas no Dashboard */
+  .oficinas-galeria {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px; margin-top: 16px;
+  }
+  .oficina-card {
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    cursor: pointer; background: var(--surface);
+  }
+  .oficina-card:hover { border-color: var(--teal); }
+  .oficina-card-img {
+    width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: var(--teal-light);
+  }
+  .oficina-card-img-placeholder {
+    width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+    font-size: 32px; background: var(--teal-light);
+  }
+  .oficina-card-body { padding: 10px 12px; }
+  .oficina-card-titulo {
+    font-size: 13px; font-weight: 700; margin: 0 0 6px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
 
   /* Drawer (prontuário deslizante) */
   .overlay {
@@ -946,8 +986,29 @@
               <span>Atualizar status de vaga</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
+            <div class="quick-action" id="qa-nova-oficina">
+              <span>Cadastrar nova oficina</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
           </div>
         </div>
+      </div>
+      <!-- Oficinas em destaque -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header-row">
+          <div>
+            <p class="card-title" style="margin-bottom:2px;">Oficinas</p>
+            <p class="content-subtitle" style="margin:0;">Projetos de apoio e reabilitação oferecidos aos acolhidos</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-secondary-sm" id="btn-ver-oficinas-dashboard">Ver todas</button>
+            <button class="btn-primary-sm" id="btn-nova-oficina-dashboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nova oficina
+            </button>
+          </div>
+        </div>
+        <div id="dashboard-oficinas-galeria"></div>
       </div>
     </section>
 
@@ -992,48 +1053,101 @@
       <div class="content-header">
         <div>
           <h2 class="content-title">Acolhidos</h2>
-          <p class="content-subtitle">Cadastro, prontuário e acompanhamento técnico</p>
+          <p class="content-subtitle">Cadastro, prontuário, acompanhamento técnico e oficinas de apoio</p>
         </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-secondary" id="btn-importar-acolhidos" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
-            Importar planilha
-          </button>
-          <button class="btn-primary" id="btn-novo-acolhimento">
+      </div>
+
+      <div class="page-tabs" id="acolhidos-page-tabs">
+        <button class="page-tab active" data-subpage="lista">Lista de acolhidos</button>
+        <button class="page-tab" data-subpage="oficinas">Oficinas</button>
+      </div>
+
+      <!-- ----- Sub-aba: Lista de acolhidos ----- -->
+      <div class="subpage active" id="subpage-acolhidos-lista">
+        <div class="content-header">
+          <div></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-secondary" id="btn-importar-acolhidos" style="flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; white-space:nowrap;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><polyline points="7 8 12 3 17 8"/><path d="M5 21h14"/></svg>
+              Importar planilha
+            </button>
+            <button class="btn-primary" id="btn-novo-acolhimento">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Novo acolhimento
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="acolhidos-search" placeholder="Buscar por nome..." />
+          </div>
+          <div class="filter-chips" id="acolhidos-filters">
+            <button class="filter-chip active" data-status="todos">Todos (<span id="count-todos">8</span>)</button>
+            <button class="filter-chip" data-status="ativo">Ativos (<span id="count-ativo">5</span>)</button>
+            <button class="filter-chip" data-status="em_avaliacao">Em avaliação (<span id="count-em_avaliacao">2</span>)</button>
+            <button class="filter-chip" data-status="desligado">Desligados (<span id="count-desligado">1</span>)</button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Idade</th>
+                <th>Status</th>
+                <th>Vaga</th>
+                <th>Entrada</th>
+                <th>Responsável técnico</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="acolhidos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ----- Sub-aba: Oficinas ----- -->
+      <div class="subpage" id="subpage-acolhidos-oficinas">
+        <div class="content-header">
+          <div>
+            <p class="content-subtitle" style="margin:0;">Projetos de apoio e reabilitação: saúde, esportes, tecnologia, enfrentamento a vícios, cursos e outras iniciativas para os acolhidos</p>
+          </div>
+          <button class="btn-primary" id="btn-nova-oficina">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Novo acolhimento
+            Nova oficina
           </button>
         </div>
-      </div>
 
-      <div class="toolbar">
-        <div class="search-box">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6B78" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="acolhidos-search" placeholder="Buscar por nome..." />
+        <div class="toolbar">
+          <div class="filter-chips" id="oficinas-filters">
+            <button class="filter-chip active" data-categoria="todos">Todas (<span id="count-oficinas-todos">0</span>)</button>
+            <button class="filter-chip" data-categoria="saude">Saúde (<span id="count-oficinas-saude">0</span>)</button>
+            <button class="filter-chip" data-categoria="esportes">Esportes (<span id="count-oficinas-esportes">0</span>)</button>
+            <button class="filter-chip" data-categoria="tecnologia">Tecnologia (<span id="count-oficinas-tecnologia">0</span>)</button>
+            <button class="filter-chip" data-categoria="vicios">Enfrentamento a vícios (<span id="count-oficinas-vicios">0</span>)</button>
+            <button class="filter-chip" data-categoria="cursos">Cursos (<span id="count-oficinas-cursos">0</span>)</button>
+            <button class="filter-chip" data-categoria="outro">Outro (<span id="count-oficinas-outro">0</span>)</button>
+          </div>
         </div>
-        <div class="filter-chips" id="acolhidos-filters">
-          <button class="filter-chip active" data-status="todos">Todos (<span id="count-todos">8</span>)</button>
-          <button class="filter-chip" data-status="ativo">Ativos (<span id="count-ativo">5</span>)</button>
-          <button class="filter-chip" data-status="em_avaliacao">Em avaliação (<span id="count-em_avaliacao">2</span>)</button>
-          <button class="filter-chip" data-status="desligado">Desligados (<span id="count-desligado">1</span>)</button>
-        </div>
-      </div>
 
-      <div class="card table-card">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Idade</th>
-              <th>Status</th>
-              <th>Vaga</th>
-              <th>Entrada</th>
-              <th>Responsável técnico</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="acolhidos-tbody"></tbody>
-        </table>
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Oficina</th>
+                <th>Categoria</th>
+                <th>Data</th>
+                <th>Responsável</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="oficinas-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -1656,6 +1770,69 @@
     <div class="modal-footer">
       <button class="btn-cancel" id="modal-doacao-cancel">Cancelar</button>
       <button class="btn-save" id="modal-doacao-save">Registrar doação</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova/Editar Oficina -->
+<div class="modal-overlay" id="modal-oficina-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-oficina-titulo">Nova oficina</h3>
+      <button class="drawer-close" id="modal-oficina-close" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label" for="no-titulo">Nome da oficina</label>
+        <input type="text" class="form-input" id="no-titulo" placeholder="Ex: Roda de conversa sobre saúde mental" />
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="no-categoria">Categoria</label>
+        <select class="form-select" id="no-categoria">
+          <option value="saude">Saúde</option>
+          <option value="esportes">Esportes</option>
+          <option value="tecnologia">Tecnologia</option>
+          <option value="vicios">Enfrentamento a vícios</option>
+          <option value="cursos">Cursos</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="no-descricao">Descrição (opcional)</label>
+        <textarea class="form-input" id="no-descricao" rows="3" placeholder="Objetivo da oficina, público-alvo, o que será trabalhado..."></textarea>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="no-imagem-arquivo">Imagem de capa (opcional)</label>
+        <img id="no-imagem-preview" src="" alt="Prévia da imagem" style="display:none; width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px; border:1px solid var(--border);" />
+        <input type="file" class="form-input" id="no-imagem-arquivo" accept="image/*" />
+        <button type="button" class="btn-row-action btn-row-danger" id="no-imagem-remover" style="display:none; margin-top:6px;">Remover imagem</button>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="no-data">Data</label>
+          <input type="date" class="form-input" id="no-data" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="no-responsavel">Responsável / facilitador</label>
+          <select class="form-select" id="no-responsavel">
+            <option value="">A definir</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="form-label" for="no-status">Status</label>
+        <select class="form-select" id="no-status">
+          <option value="planejada">Planejada</option>
+          <option value="realizada">Realizada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-oficina-cancel">Cancelar</button>
+      <button class="btn-save" id="modal-oficina-save">Salvar oficina</button>
     </div>
   </div>
 </div>
@@ -4081,6 +4258,337 @@
     mostrarToast('Doação excluída.');
   }
 
+  // ===== Sub-abas da página Acolhidos (Lista de acolhidos / Oficinas) =====
+  document.querySelectorAll('#acolhidos-page-tabs .page-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('#acolhidos-page-tabs .page-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      document.querySelectorAll('#page-Acolhidos .subpage').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('subpage-acolhidos-' + tab.dataset.subpage).classList.add('active');
+    });
+  });
+
+  // ===== Oficinas =====
+  // Projetos de apoio e reabilitação oferecidos aos acolhidos: saúde, esportes,
+  // tecnologia, enfrentamento a vícios, cursos e outras iniciativas.
+  var OFICINAS = [];
+  var oficinaEmEdicaoId = null;
+  var OFICINAS_BUCKET = 'oficinas-imagens';
+  var imagemOficinaAtualUrl = null;
+  var imagemOficinaRemovida = false;
+
+  var CATEGORIA_OFICINA_LABEL = {
+    saude: 'Saúde',
+    esportes: 'Esportes',
+    tecnologia: 'Tecnologia',
+    vicios: 'Enfrentamento a vícios',
+    cursos: 'Cursos',
+    outro: 'Outro',
+  };
+
+  var STATUS_OFICINA_LABEL = {
+    planejada: 'Planejada',
+    realizada: 'Realizada',
+    cancelada: 'Cancelada',
+  };
+  var STATUS_OFICINA_CLASS = {
+    planejada: 'status-avaliacao',
+    realizada: 'status-ativo',
+    cancelada: 'status-desligado',
+  };
+
+  async function carregarOficinas() {
+    var tbody = document.getElementById('oficinas-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">Carregando oficinas...</td></tr>';
+    }
+
+    var resultado = await db
+      .from('oficinas')
+      .select('*')
+      .order('data', { ascending: false });
+
+    if (resultado.error) {
+      console.error('Erro ao carregar oficinas do Supabase:', resultado.error);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger); padding:32px;">Não foi possível carregar as oficinas. Verifique se a tabela "oficinas" existe no Supabase.</td></tr>';
+      }
+      return;
+    }
+
+    OFICINAS = resultado.data;
+    renderOficinas();
+    renderDashboardOficinas();
+  }
+
+  function renderDashboardOficinas() {
+    var galeria = document.getElementById('dashboard-oficinas-galeria');
+    if (!galeria) return;
+
+    if (!OFICINAS.length) {
+      galeria.innerHTML = '<p class="content-subtitle" style="margin:16px 0 0;">Nenhuma oficina cadastrada ainda. Clique em "Nova oficina" para começar.</p>';
+      return;
+    }
+
+    var destaque = OFICINAS.slice(0, 8);
+
+    galeria.innerHTML = '<div class="oficinas-galeria">' +
+      destaque.map(function(o) {
+        return '<div class="oficina-card" data-oficina-id="' + o.id + '">' +
+          (o.imagem_url
+            ? '<img class="oficina-card-img" src="' + esc(o.imagem_url) + '" alt="" />'
+            : '<div class="oficina-card-img-placeholder">🎨</div>') +
+          '<div class="oficina-card-body">' +
+            '<p class="oficina-card-titulo">' + esc(o.titulo) + '</p>' +
+            '<span class="status-badge cat-' + o.categoria + '" style="font-size:10.5px; padding:3px 8px;">' + (CATEGORIA_OFICINA_LABEL[o.categoria] || o.categoria) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    galeria.querySelectorAll('.oficina-card').forEach(function(elCard) {
+      elCard.addEventListener('click', function() {
+        var oficina = OFICINAS.find(function(o) { return o.id === elCard.dataset.oficinaId; });
+        irParaAbaOficinas();
+        if (oficina) abrirModalOficina(oficina);
+      });
+    });
+  }
+
+  function renderOficinas() {
+    var tbody = document.getElementById('oficinas-tbody');
+    if (!tbody) return;
+
+    var filtroEl = document.querySelector('#oficinas-filters .filter-chip.active');
+    var filtro = filtroEl ? filtroEl.dataset.categoria : 'todos';
+
+    document.getElementById('count-oficinas-todos').textContent = OFICINAS.length;
+    ['saude', 'esportes', 'tecnologia', 'vicios', 'cursos', 'outro'].forEach(function(cat) {
+      document.getElementById('count-oficinas-' + cat).textContent =
+        OFICINAS.filter(function(o) { return o.categoria === cat; }).length;
+    });
+
+    var lista = filtro === 'todos' ? OFICINAS : OFICINAS.filter(function(o) { return o.categoria === filtro; });
+
+    tbody.innerHTML = lista.map(function(o) {
+      return '<tr>' +
+        '<td>' +
+          '<div style="display:flex; align-items:center; gap:14px;">' +
+            (o.imagem_url
+              ? '<img src="' + esc(o.imagem_url) + '" alt="" style="width:3cm; height:3cm; border-radius:10px; object-fit:cover; flex-shrink:0;" />'
+              : '<div class="name-avatar" style="width:3cm; height:3cm; border-radius:10px; font-size:28px;">🎨</div>') +
+            '<div>' +
+              '<div style="font-weight:600;">' + esc(o.titulo) + '</div>' +
+              (o.descricao ? '<div class="content-subtitle" style="margin:2px 0 0; max-width:260px;">' + esc(o.descricao) + '</div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</td>' +
+        '<td><span class="status-badge cat-' + o.categoria + '">' + (CATEGORIA_OFICINA_LABEL[o.categoria] || o.categoria) + '</span></td>' +
+        '<td>' + esc(formatarData(o.data)) + '</td>' +
+        '<td>' + esc(nomeResponsavelPorId(o.responsavel_id) || 'A definir') + '</td>' +
+        '<td><span class="status-badge ' + (STATUS_OFICINA_CLASS[o.status] || 'status-avaliacao') + '">' + (STATUS_OFICINA_LABEL[o.status] || o.status) + '</span></td>' +
+        '<td class="col-actions">' +
+          '<button class="btn-row-action" data-acao="editar" data-oficina-id="' + o.id + '">Editar</button>' +
+          '<button class="btn-row-action btn-row-danger" data-acao="excluir" data-oficina-id="' + o.id + '">Excluir</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:32px;">Nenhuma oficina cadastrada.</td></tr>';
+    }
+
+    tbody.querySelectorAll('.btn-row-action').forEach(function(botao) {
+      botao.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var oficina = OFICINAS.find(function(o) { return o.id === botao.dataset.oficinaId; });
+        if (!oficina) return;
+        if (botao.dataset.acao === 'editar') abrirModalOficina(oficina);
+        else excluirOficina(oficina);
+      });
+    });
+  }
+
+  document.querySelectorAll('#oficinas-filters .filter-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('#oficinas-filters .filter-chip').forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderOficinas();
+    });
+  });
+
+  function popularResponsaveisOficina(idSelecionado) {
+    var select = document.getElementById('no-responsavel');
+    select.innerHTML = '<option value="">A definir</option>';
+    EQUIPE.filter(function(m) { return m.ativo; }).forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.nome_completo + (m.cargo ? ' (' + (CARGO_LABEL[m.cargo] || m.cargo) + ')' : '');
+      select.appendChild(opt);
+    });
+    select.value = idSelecionado || '';
+  }
+
+  function atualizarPreviewImagemOficina() {
+    var preview = document.getElementById('no-imagem-preview');
+    var btnRemover = document.getElementById('no-imagem-remover');
+    if (imagemOficinaAtualUrl && !imagemOficinaRemovida) {
+      preview.src = imagemOficinaAtualUrl;
+      preview.style.display = 'block';
+      btnRemover.style.display = 'inline-flex';
+    } else {
+      preview.style.display = 'none';
+      preview.src = '';
+      btnRemover.style.display = 'none';
+    }
+  }
+
+  document.getElementById('no-imagem-arquivo').addEventListener('change', function(e) {
+    var arquivo = e.target.files[0];
+    if (!arquivo) return;
+    imagemOficinaRemovida = false;
+    var preview = document.getElementById('no-imagem-preview');
+    preview.src = URL.createObjectURL(arquivo);
+    preview.style.display = 'block';
+    document.getElementById('no-imagem-remover').style.display = 'inline-flex';
+  });
+
+  document.getElementById('no-imagem-remover').addEventListener('click', function() {
+    imagemOficinaAtualUrl = null;
+    imagemOficinaRemovida = true;
+    document.getElementById('no-imagem-arquivo').value = '';
+    atualizarPreviewImagemOficina();
+  });
+
+  function abrirModalOficina(oficina) {
+    oficinaEmEdicaoId = oficina ? oficina.id : null;
+    document.getElementById('modal-oficina-titulo').textContent = oficina ? 'Editar oficina' : 'Nova oficina';
+    document.getElementById('modal-oficina-save').textContent = oficina ? 'Salvar alterações' : 'Salvar oficina';
+
+    document.getElementById('no-titulo').value = oficina ? oficina.titulo : '';
+    document.getElementById('no-categoria').value = oficina ? oficina.categoria : 'saude';
+    document.getElementById('no-descricao').value = oficina ? (oficina.descricao || '') : '';
+    document.getElementById('no-data').value = oficina ? (oficina.data || '') : hojeISO();
+    document.getElementById('no-status').value = oficina ? oficina.status : 'planejada';
+    popularResponsaveisOficina(oficina ? oficina.responsavel_id : '');
+
+    document.getElementById('no-imagem-arquivo').value = '';
+    imagemOficinaAtualUrl = oficina ? (oficina.imagem_url || null) : null;
+    imagemOficinaRemovida = false;
+    atualizarPreviewImagemOficina();
+
+    document.getElementById('modal-oficina-overlay').classList.add('open');
+  }
+  function fecharModalOficina() {
+    document.getElementById('modal-oficina-overlay').classList.remove('open');
+    oficinaEmEdicaoId = null;
+  }
+  document.getElementById('btn-nova-oficina').addEventListener('click', function() { abrirModalOficina(null); });
+
+  function irParaAbaOficinas() {
+    var navAcolhidos = document.querySelector('.nav-item[data-page="Acolhidos"]');
+    if (navAcolhidos) navAcolhidos.click();
+    var tabOficinas = document.querySelector('#acolhidos-page-tabs .page-tab[data-subpage="oficinas"]');
+    if (tabOficinas) tabOficinas.click();
+  }
+
+  var btnVerOficinasDashboard = document.getElementById('btn-ver-oficinas-dashboard');
+  if (btnVerOficinasDashboard) btnVerOficinasDashboard.addEventListener('click', irParaAbaOficinas);
+
+  var btnNovaOficinaDashboard = document.getElementById('btn-nova-oficina-dashboard');
+  if (btnNovaOficinaDashboard) btnNovaOficinaDashboard.addEventListener('click', function() {
+    irParaAbaOficinas();
+    abrirModalOficina(null);
+  });
+
+  var qaNovaOficina = document.getElementById('qa-nova-oficina');
+  if (qaNovaOficina) qaNovaOficina.addEventListener('click', function() {
+    irParaAbaOficinas();
+    abrirModalOficina(null);
+  });
+  document.getElementById('modal-oficina-close').addEventListener('click', fecharModalOficina);
+  document.getElementById('modal-oficina-cancel').addEventListener('click', fecharModalOficina);
+  document.getElementById('modal-oficina-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-oficina-overlay')) fecharModalOficina();
+  });
+
+  document.getElementById('modal-oficina-save').addEventListener('click', async function() {
+    var titulo = document.getElementById('no-titulo').value.trim();
+    var categoria = document.getElementById('no-categoria').value;
+    var descricao = document.getElementById('no-descricao').value.trim();
+    var data = document.getElementById('no-data').value;
+    var responsavelId = document.getElementById('no-responsavel').value || null;
+    var status = document.getElementById('no-status').value;
+
+    if (!titulo) {
+      alert('Informe o nome da oficina.');
+      return;
+    }
+    if (!data) {
+      alert('Selecione a data da oficina.');
+      return;
+    }
+
+    var botao = document.getElementById('modal-oficina-save');
+    botao.disabled = true;
+
+    var imagemUrlFinal = imagemOficinaAtualUrl;
+    var arquivoImagem = document.getElementById('no-imagem-arquivo').files[0];
+
+    if (arquivoImagem) {
+      var nomeArquivo = Date.now() + '-' + arquivoImagem.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      var uploadResultado = await db.storage.from(OFICINAS_BUCKET).upload(nomeArquivo, arquivoImagem, { upsert: true });
+      if (uploadResultado.error) {
+        console.error('Erro ao enviar imagem da oficina:', uploadResultado.error);
+        alert('Não foi possível enviar a imagem. Verifique se o bucket "' + OFICINAS_BUCKET + '" existe no Supabase Storage. A oficina não foi salva.');
+        botao.disabled = false;
+        return;
+      }
+      imagemUrlFinal = db.storage.from(OFICINAS_BUCKET).getPublicUrl(uploadResultado.data.path).data.publicUrl;
+    }
+
+    var payload = {
+      titulo: titulo,
+      categoria: categoria,
+      descricao: descricao || null,
+      data: data,
+      responsavel_id: responsavelId,
+      status: status,
+      imagem_url: imagemUrlFinal,
+    };
+
+    var resultado = oficinaEmEdicaoId
+      ? await db.from('oficinas').update(payload).eq('id', oficinaEmEdicaoId)
+      : await db.from('oficinas').insert(payload);
+
+    botao.disabled = false;
+
+    if (resultado.error) {
+      console.error('Erro ao salvar oficina no Supabase:', resultado.error);
+      alert('Não foi possível salvar a oficina. Verifique se a tabela "oficinas" existe no Supabase e tente novamente.');
+      return;
+    }
+
+    var eraEdicao = !!oficinaEmEdicaoId;
+    fecharModalOficina();
+    await carregarOficinas();
+    mostrarToast(eraEdicao ? 'Oficina atualizada.' : 'Oficina cadastrada.');
+  });
+
+  async function excluirOficina(oficina) {
+    var confirmar = confirm('Tem certeza que deseja excluir a oficina "' + oficina.titulo + '"? Esta ação não pode ser desfeita.');
+    if (!confirmar) return;
+
+    var resultado = await db.from('oficinas').delete().eq('id', oficina.id);
+    if (resultado.error) {
+      console.error('Erro ao excluir oficina:', resultado.error);
+      alert('Não foi possível excluir a oficina. Tente novamente.');
+      return;
+    }
+    await carregarOficinas();
+    mostrarToast('Oficina excluída.');
+  }
+
   // KPI do Dashboard: total de itens de doação recebidos no mês atual
   function atualizarKpiDoacoes() {
     var kpiValor = document.getElementById('kpi-doacoes-mes');
@@ -5532,6 +6040,7 @@
     await carregarAcolhidos();
     await carregarAtividadesRecentes();
     await carregarDoacoes();
+    await carregarOficinas();
     await carregarEstoque();
     await carregarCompras();
     await carregarAportes();
